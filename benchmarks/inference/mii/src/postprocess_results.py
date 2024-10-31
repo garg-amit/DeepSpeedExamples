@@ -157,7 +157,7 @@ if __name__ == "__main__":
         + f"First token received: {ps.first_token_latency:.3f} s"
     )
 
-def get_result_sets(args: argparse.Namespace) -> set():
+def get_result_sets(args: argparse.Namespace, data_dir_path=None) -> set():
     result_params = None
     result_re = re.compile(
         r"(.+)-tp(\d+)-bs(\d+)-replicas(\d+)-prompt(\d+)-gen(\d+)-clients.*.json"
@@ -165,7 +165,9 @@ def get_result_sets(args: argparse.Namespace) -> set():
 
     data_sets = defaultdict(set)
 
-    if hasattr(args, "data_dirs"):
+    if data_dir_path:
+        data_set_dirs = data_dir_path
+    elif hasattr(args, "data_dirs"):
         data_set_dirs = args.data_dirs
     elif hasattr(args, "backend"):
         data_set_dirs = args.backend
@@ -197,4 +199,4 @@ def get_result_sets(args: argparse.Namespace) -> set():
             print(tabulate(difference, headers=["model", "tp_size", "bs", "replicas", "prompt", "gen"]))
             print("")
 
-    return result_params
+    return list(result_params)

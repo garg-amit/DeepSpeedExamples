@@ -81,7 +81,7 @@ def call_vllm(
     pload = {
         "prompt": input_tokens,
         "n": 1,
-        "use_beam_search": False,
+        # "use_beam_search": False,
         "temperature": 1.0,
         "top_p": 0.9,
         "max_tokens": max_new_tokens,
@@ -346,7 +346,7 @@ def run_client(args):
     for p in processes:
         p.start()
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42)
     request_text = query_generator.get_random_request_text(
         args.mean_prompt_length,
@@ -378,6 +378,7 @@ def run_client(args):
         # vLLM returns concatinated tokens
         if args.backend == "vllm":
             all_tokens = tokenizer.tokenize(res.generated_tokens)
+            all_tokens = [item.decode(errors='ignore') if isinstance(item, bytes) else item for item in all_tokens]
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]
         response_details.append(res)
 

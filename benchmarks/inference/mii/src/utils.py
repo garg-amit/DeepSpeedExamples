@@ -41,6 +41,9 @@ def parse_args(
         "--tp_size", type=int, nargs="+", default=None, help="Tensor parallelism size"
     )
     server_parser.add_argument(
+        "--load_format", type=str, default="auto", help="model weights format"
+    )
+    server_parser.add_argument(
         "--max_ragged_batch_size",
         type=int,
         nargs="+",

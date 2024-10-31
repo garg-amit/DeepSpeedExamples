@@ -38,6 +38,9 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         str(args.tp_size),
         "--model",
         args.model,
+        "--trust-remote-code",
+        "--load-format",
+        args.load_format
     )
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
