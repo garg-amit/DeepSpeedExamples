@@ -85,7 +85,7 @@ def call_vllm(
         "temperature": 1.0,
         "top_p": 0.9,
         "max_tokens": max_new_tokens,
-        "ignore_eos": False,
+        "ignore_eos": True, #False,
         "stream": args.stream,
     }
 
