@@ -40,6 +40,8 @@ def extract_values(file_pattern):
     clients = []
     throughputs = []
     latencies = []
+    ttfts = []
+    tbts = []
     extra_args = {}
     for f in files:
         prof_args, response_details = read_json(f)
@@ -47,14 +49,44 @@ def extract_values(file_pattern):
         clients.append(prof_args["num_clients"])
         throughputs.append(summary.throughput)
         latencies.append(summary.latency)
+        ttfts.append(summary.first_token_latency)
+        tbts.append(summary.token_gen_latency)
 
-    return clients, throughputs, latencies, prof_args
+    return clients, throughputs, latencies, prof_args, ttfts, tbts
 
+def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'):
+    def plot_bars(ax, x, latencies, labels, title, color_map):
+        bars = ax.bar(x, latencies, width, label=labels, color=color_map)
+        ax.set_title(title)
+        ax.set_ylabel('Latency (s)')
+        ax.set_xticks(x)
+        ax.set_xticklabels(range(len(labels)))
+        ax.legend()
+        for bar in bars:
+            yval = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 4), ha='center', va='bottom')
+
+    x = np.arange(len(names))
+    width = 1
+    colors = plt.cm.get_cmap('tab10', len(names))
+    color_map = colors(np.linspace(0, 1, len(names)))
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    fig.suptitle(f'Prompt: {prompt}, Generation: {gen}')
+
+    plot_bars(axs[0], x - width/2, TTFTs, names, 'Time to First Token (TTFT)', color_map)
+    plot_bars(axs[1], x + width/2, TBTs, names, 'Time Between Tokens (TBT)', color_map)
+
+    plt.tight_layout()
+    plt.savefig(f'{output_dir}/ttft_tbt-prompt{prompt}-gen{gen}.png')
+    plt.show()
 
 def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     color_cycle = plt.cm.get_cmap('tab10')
+    TTFTs = []
+    TBTs = []
     for id, model in enumerate(models):
         result_file_pattern = f"{model}-tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}-clients*.json"
         if ax is None:
@@ -63,7 +95,11 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
         dir_path = [data_dir_path[id]] if data_dir_path else args.data_dirs
         for idx, data_dir in enumerate(dir_path):
             file_pattern = f"{data_dir}/{result_file_pattern}"
-            _, throughputs, latencies, _ = extract_values(file_pattern)
+            _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
+
+            # Consider only TTFTs and TBTS when num of clients is 1 i.e. at index 0
+            TTFTs.append(ttfts[0])
+            TBTs.append(tbts[0])
 
             kwargs = {}
             kwargs["label"] = str(data_dir)
@@ -168,6 +204,9 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     )
     print(f"Saving {out_file}")
     plt.savefig(out_file)
+
+    # Plot TTFT and TBT
+    plot_latency_comparison(TTFTs, TBTs, model_names, prompt, gen, output_dir=out_dir)
 
 
 if __name__ == "__main__":
