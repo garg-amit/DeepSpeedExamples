@@ -116,10 +116,26 @@ def call_vllm(
 
     token_gen_time = []
     start_time = time.time()
-    response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
-    for h, t in get_streaming_response(response, start_time):
-        output = h
-        token_gen_time.append(t)
+    
+    def retry():
+        response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+        for h, t in get_streaming_response(response, start_time):
+            output = h
+            token_gen_time.append(t)
+    
+    retry_count = 0
+    output = "uh"
+    max_retries = 5
+    while retry_count < max_retries:
+        try:
+            retry()
+            break
+        except requests.exceptions.ChunkedEncodingError as e:
+            retry_count += 1
+            print(f"caught and swallowed ChunkedEncodingError {retry_count=}")
+
+    if retry_count == max_retries:
+        print("!!! MAX RETRIES MET !!!")
 
     return ResponseDetails(
         generated_tokens=output,
@@ -279,7 +295,7 @@ def _run_parallel(
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
-    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "aml": call_aml, "openai": call_openai}
+    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm, "aml": call_aml, "openai": call_openai}
     call_fn = backend_call_fns[args.backend]
 
     barrier.wait()

@@ -18,6 +18,7 @@ def start_server(args: argparse.Namespace) -> None:
     start_server_fns = {
         "fastgen": start_fastgen_server,
         "vllm": start_vllm_server,
+        "vllmyoco": start_yoco_vllm_server,
         "aml": start_aml_server,
         "openai": start_openai_server,
     }
@@ -41,6 +42,45 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--trust-remote-code",
         "--load-format",
         args.load_format
+    )
+    p = subprocess.Popen(
+        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
+    )
+    start_time = time.time()
+    timeout_after = 60 * 5  # 5 minutes
+    while True:
+        line = p.stderr.readline().decode("utf-8")
+        if "Application startup complete" in line:
+            break
+        if "error" in line.lower():
+            p.terminate()
+            stop_vllm_server(args)
+            raise RuntimeError(f"Error starting VLLM server: {line}")
+        if time.time() - start_time > timeout_after:
+            p.terminate()
+            stop_vllm_server(args)
+            raise TimeoutError("Timed out waiting for VLLM server to start")
+        time.sleep(0.01)
+
+
+def start_yoco_vllm_server(args: argparse.Namespace) -> None:
+    vllm_cmd = (
+        "python",
+        "-m",
+        "vllm.entrypoints.api_server",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "26500",
+        "--model",
+        args.model,
+        "--trust-remote-code",
+        "--load-format",
+        args.load_format,
+        "--enforce-eager", 
+        "--max-model-len",
+        "100000",
+        #"--dtype auto",
     )
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True

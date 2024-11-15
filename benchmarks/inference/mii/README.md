@@ -109,3 +109,9 @@ bash run_example.sh
 
   *Figure 1: Throughput-latency curve and effective throughput of Llama 2 7b using A6000. Runs the client with 60 generation steps and input prompt length of 2600.*<br>
 </div>
+
+## yoco installation
+
+1. `bash install_1_update_docker.sh`
+1. `bash install_2_skinny_custom_vllm_install.sh`
+1. `bash install_3_skinny_requirements.sh`

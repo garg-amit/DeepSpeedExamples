@@ -171,7 +171,7 @@ def parse_args(
     parser.add_argument(
         "--backend",
         type=str,
-        choices=["aml", "fastgen", "vllm", "openai"],
+        choices=["aml", "fastgen", "vllm", "openai", "vllmyoco"],
         default="fastgen",
         help="Which backend to benchmark",
     )
