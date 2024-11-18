@@ -43,6 +43,7 @@ def extract_values(file_pattern):
     ttfts = []
     tbts = []
     extra_args = {}
+    prof_args = None
     for f in files:
         prof_args, response_details = read_json(f)
         summary = get_summary(prof_args, response_details)
@@ -87,6 +88,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     color_cycle = plt.cm.get_cmap('tab10')
     TTFTs = []
     TBTs = []
+    models_with_data = []
     for id, model in enumerate(models):
         result_file_pattern = f"{model}-tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}-clients*.json"
         if ax is None:
@@ -97,6 +99,11 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
             file_pattern = f"{data_dir}/{result_file_pattern}"
             _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
 
+            if ttfts is None or len(ttfts) == 0:
+                print(f"Skipping {model} due to missing values")
+                continue
+
+            models_with_data.append(model_names[id])
             # Consider only TTFTs and TBTS when num of clients is 1 i.e. at index 0
             TTFTs.append(ttfts[0])
             TBTs.append(tbts[0])
@@ -206,7 +213,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     plt.savefig(out_file)
 
     # Plot TTFT and TBT
-    plot_latency_comparison(TTFTs, TBTs, model_names, prompt, gen, output_dir=out_dir)
+    plot_latency_comparison(TTFTs, TBTs, models_with_data, prompt, gen, output_dir=out_dir)
 
 
 if __name__ == "__main__":
@@ -214,7 +221,7 @@ if __name__ == "__main__":
     results = [get_result_sets(args, data_dir_path=[data_dir]) for data_dir in args.result_dirs]
     for idx, (_, tp_size, bs, replicas, prompt, gen) in enumerate(results[0]):
         output_charts(
-            models=[item[idx][0] for item in results],
+            models=[item[0][0] for item in results],
             tp_size=tp_size,
             bs=bs,
             replicas=replicas,

@@ -7,13 +7,43 @@
 MODELS=(microsoft/Phi-3.5-mini-instruct)
 OUT_DIR=./results_vllm
 LOAD_FORMAT=auto #dummy
+MAX_PROMPT_LEN=8192
+BACKEND=vllm #vllm_chat_completion
+USE_IMAGE=False
+USE_AUDIO=False
+MODEL_MAX_LEN=32000
+TP_SIZE=1
+MODEL_SERVER_EXTRA_ARGS=""
+
+# Set Attention backend
+export VLLM_ATTENTION_BACKEND=XFORMERS
+
+run_benchmark() {
+    local mean_prompt_length=$1
+    local mean_max_new_tokens=$2
+    local use_flag=$3
+
+    python ./run_benchmark.py --backend ${BACKEND} --model ${MODEL} --max_model_len ${MODEL_MAX_LEN} \
+        --mean_prompt_length ${mean_prompt_length} --max_prompt_length ${MAX_PROMPT_LEN} \
+        --mean_max_new_tokens ${mean_max_new_tokens} --tp_size ${TP_SIZE} --out_json_dir ${OUT_DIR} \
+        --load_format ${LOAD_FORMAT} --stream ${use_flag} --extra_args "${MODEL_SERVER_EXTRA_ARGS}"
+}
 
 for MODEL in ${MODELS[@]}; do
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 500 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream 
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 1300 --mean_max_new_tokens 120 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 2600 --mean_max_new_tokens 60 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 4096 --mean_max_new_tokens 500 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 4096 --mean_max_new_tokens 1500 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-    python ./run_benchmark.py --backend vllm  --model ${MODEL} --mean_prompt_length 15000 --mean_max_new_tokens 1000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
- 
+    if [ "$USE_AUDIO" = True ]; then
+        run_benchmark 500 500 "--use_audio"
+        run_benchmark 1300 120 "--use_audio"
+        run_benchmark 2600 60 "--use_audio"
+        run_benchmark 4096 500 "--use_audio"
+    elif [ "$USE_IMAGE" = True ]; then
+        run_benchmark 500 500 "--use_image"
+        run_benchmark 1300 120 "--use_image"
+        run_benchmark 2600 60 "--use_image"
+        run_benchmark 4096 500 "--use_image"
+    else
+        run_benchmark 500 500 "" 
+        run_benchmark 1300 120 ""
+        run_benchmark 2600 60 ""
+        run_benchmark 4096 500 ""
+    fi
 done

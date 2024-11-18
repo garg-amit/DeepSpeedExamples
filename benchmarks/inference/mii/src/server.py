@@ -20,6 +20,7 @@ def start_server(args: argparse.Namespace) -> None:
         "vllm": start_vllm_server,
         "aml": start_aml_server,
         "openai": start_openai_server,
+        "vllm_chat_completion": start_vllm_server,
     }
     start_fn = start_server_fns[args.backend]
     start_fn(args)
@@ -40,8 +41,12 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         args.model,
         "--trust-remote-code",
         "--load-format",
-        args.load_format
+        args.load_format,
+        "--max-model-len",
+        str(args.max_model_len),
     )
+    if args.extra_args and args.extra_args.strip() != "":
+        vllm_cmd = vllm_cmd + tuple(args.extra_args.split(" "))
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
     )
@@ -104,6 +109,7 @@ def stop_server(args: argparse.Namespace) -> None:
         "vllm": stop_vllm_server,
         "aml": stop_aml_server,
         "openai": stop_openai_server,
+        "vllm_chat_completion": stop_vllm_server,
     }
     stop_fn = stop_server_fns[args.backend]
     stop_fn(args)

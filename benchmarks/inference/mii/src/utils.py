@@ -44,6 +44,12 @@ def parse_args(
         "--load_format", type=str, default="auto", help="model weights format"
     )
     server_parser.add_argument(
+        "--max_model_len", type=int, default=4096, help="Model max length"
+    )
+    server_parser.add_argument(
+        "--extra_args", type=str, default="", help="Model server extra arguments"
+    )
+    server_parser.add_argument(
         "--max_ragged_batch_size",
         type=int,
         nargs="+",
@@ -73,6 +79,12 @@ def parse_args(
     client_parser = argparse.ArgumentParser(add_help=False)
     client_parser.add_argument(
         "--max_prompt_length", type=int, default=None, help="Max length a prompt can be"
+    )
+    client_parser.add_argument(
+        "--use_image", action="store_true", help="Whether to use image input"
+    )
+    client_parser.add_argument(
+        "--use_audio", action="store_true", default=False, help="Whether to use audio input"
     )
     client_parser.add_argument(
         "--mean_prompt_length",
@@ -171,7 +183,7 @@ def parse_args(
     parser.add_argument(
         "--backend",
         type=str,
-        choices=["aml", "fastgen", "vllm", "openai"],
+        choices=["aml", "fastgen", "vllm", "openai", "vllm_chat_completion"],
         default="fastgen",
         help="Which backend to benchmark",
     )
