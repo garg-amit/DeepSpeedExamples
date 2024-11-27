@@ -22,12 +22,12 @@ try:
     from .postprocess_results import ResponseDetails
     from .random_query_generator import RandomQueryGenerator
     from .sample_input import all_text
-    from .utils import parse_args, print_summary, get_args_product, CLIENT_PARAMS
+    from .utils import parse_args, print_summary, get_args_product, CLIENT_PARAMS, BENCHMARK_MODEL_NAME
 except ImportError:
     from postprocess_results import ResponseDetails
     from random_query_generator import RandomQueryGenerator
     from sample_input import all_text
-    from utils import parse_args, print_summary, get_args_product, CLIENT_PARAMS
+    from utils import parse_args, print_summary, get_args_product, CLIENT_PARAMS, BENCHMARK_MODEL_NAME
 
 
 def call_fastgen(
@@ -116,26 +116,66 @@ def call_vllm(
 
     token_gen_time = []
     start_time = time.time()
-    
-    def retry():
-        response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
-        for h, t in get_streaming_response(response, start_time):
-            output = h
-            token_gen_time.append(t)
-    
-    retry_count = 0
-    output = "uh"
-    max_retries = 5
-    while retry_count < max_retries:
-        try:
-            retry()
-            break
-        except requests.exceptions.ChunkedEncodingError as e:
-            retry_count += 1
-            print(f"caught and swallowed ChunkedEncodingError {retry_count=}")
+    response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+    for h, t in get_streaming_response(response, start_time):
+        output = h
+        token_gen_time.append(t)
 
-    if retry_count == max_retries:
-        print("!!! MAX RETRIES MET !!!")
+    return ResponseDetails(
+        generated_tokens=output,
+        prompt=input_tokens,
+        start_time=start_time,
+        end_time=time.time(),
+        model_time=0,
+        token_gen_time=token_gen_time,
+    )
+
+
+def call_vllm_yoco(
+    input_tokens: str, max_new_tokens: int, args: argparse.Namespace
+) -> ResponseDetails:
+    if not args.stream:
+        raise NotImplementedError("Not implemented for non-streaming")
+
+    api_url = "http://localhost:26500/v1/completions" # "http://localhost:26500/generate"
+    headers = {"User-Agent": "Benchmark Client"}
+    pload = {
+        #"model": "/data/users/adatkins/dev/phivnext/yoco/yocov2/v2_hf_ws_3att/yocov2_samba_hf", # TODO we can change this with some vllm arg
+        "model": BENCHMARK_MODEL_NAME,
+        "prompt": input_tokens,
+        "n": 1,
+        "temperature": 1.0,
+        "top_p": 0.9,
+        "max_tokens": max_new_tokens,
+        "ignore_eos": True,
+        "stream": args.stream,
+    }
+
+    def get_streaming_response(
+        response: requests.Response, time_last_token
+    ) -> Iterable[List[str]]:
+        print(f"??? {response.status_code=}")
+        #print(f"{response.content=}") # causes some errors
+        #print(f"{response=}")
+        # dir(response)=['__attrs__', '__bool__', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__nonzero__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setstate__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_content', '_content_consumed', '_next', 'apparent_encoding', 'close', 'connection', 'content', 'cookies', 'elapsed', 'encoding', 'headers', 'history', 'is_permanent_redirect', 'is_redirect', 'iter_content', 'iter_lines', 'json', 'links', 'next', 'ok', 'raise_for_status', 'raw', 'reason', 'request', 'status_code', 'text', 'url']
+        c = 0
+        for chunk in response.iter_content(chunk_size=512, decode_unicode=False):
+            if chunk:
+                output = chunk.decode("utf-8") # UnicodeDecodeError: 'utf-8' codec can't decode bytes in position 510-511: unexpected end of data
+                # c += 1
+                # print(f"{c=} {max_new_tokens=} {output=}")
+                time_now = time.time()
+                yield output, time_now - time_last_token
+                time_last_token = time_now
+
+    token_gen_time = []
+    start_time = time.time()
+    
+    #print(f"^^^ PROMPT {input_tokens=}")
+    response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+    for h, t in get_streaming_response(response, start_time):
+        output = h
+        token_gen_time.append(t)
 
     return ResponseDetails(
         generated_tokens=output,
@@ -295,7 +335,7 @@ def _run_parallel(
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
-    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm, "aml": call_aml, "openai": call_openai}
+    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm_yoco, "aml": call_aml, "openai": call_openai}
     call_fn = backend_call_fns[args.backend]
 
     barrier.wait()
@@ -371,6 +411,8 @@ def run_client(args):
         args.num_requests + args.warmup * args.num_clients,
     )
 
+    print(f"{args.num_requests=} {args.warmup=} {args.num_clients=}")
+
     for t in request_text:
         # Set max_new_tokens following normal distribution
         req_max_new_tokens = int(
@@ -392,7 +434,7 @@ def run_client(args):
     while len(response_details) < args.num_requests:
         res = result_queue.get()
         # vLLM returns concatinated tokens
-        if args.backend == "vllm":
+        if "vllm" in args.backend:
             all_tokens = tokenizer.tokenize(res.generated_tokens)
             all_tokens = [item.decode(errors='ignore') if isinstance(item, bytes) else item for item in all_tokens]
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]

@@ -25,6 +25,7 @@ except ImportError:
 # benchmark. The benchmark will iterate over all possible combinations.
 SERVER_PARAMS = ["tp_size", "max_ragged_batch_size", "num_replicas"]
 CLIENT_PARAMS = ["mean_prompt_length", "mean_max_new_tokens", "num_clients"]
+BENCHMARK_MODEL_NAME = "BENCHMARK_MODEL_NAME"
 
 AML_REQUIRED_PARAMS = ["aml_api_url", "aml_api_key", "deployment_name", "model"]
 

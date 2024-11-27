@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # DeepSpeed Team
-
 from src.client import run_client
 from src.server import start_server, stop_server
 from src.utils import (
@@ -20,6 +19,7 @@ def run_benchmark() -> None:
     args = parse_args(server_args=True, client_args=True)
 
     for server_args in get_args_product(args, which=SERVER_PARAMS):
+        print(f"\n****SERVER_ARGS*** {args=} {server_args=}")
         if server_args.backend != "aml" and not server_args.client_only:
             start_server(server_args)
 
@@ -32,6 +32,12 @@ def run_benchmark() -> None:
 
             if client_args.num_requests is None:
                 client_args.num_requests = client_args.num_clients * 4 + 32
+
+            if args.backend == "vllmyoco":
+                client_args.num_clients = 2
+                #client_args.num_clients = 1 # parallelism seems to cause an error when decoding streaming response
+
+            print(f"\n****CLIENT_ARGS*** {server_args=} {client_args=}\n")
             response_details = run_client(client_args)
             print_summary(client_args, response_details)
             save_json_results(client_args, response_details)

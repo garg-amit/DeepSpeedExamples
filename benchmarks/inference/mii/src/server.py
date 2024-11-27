@@ -9,16 +9,16 @@ import time
 
 
 try:
-    from .utils import parse_args, SERVER_PARAMS
+    from .utils import parse_args, SERVER_PARAMS, BENCHMARK_MODEL_NAME
 except ImportError:
-    from utils import parse_args, SERVER_PARAMS
+    from utils import parse_args, SERVER_PARAMS, BENCHMARK_MODEL_NAME
 
 
 def start_server(args: argparse.Namespace) -> None:
     start_server_fns = {
         "fastgen": start_fastgen_server,
         "vllm": start_vllm_server,
-        "vllmyoco": start_yoco_vllm_server,
+        "vllmyoco": start_vllm_yoco_server,
         "aml": start_aml_server,
         "openai": start_openai_server,
     }
@@ -63,28 +63,29 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         time.sleep(0.01)
 
 
-def start_yoco_vllm_server(args: argparse.Namespace) -> None:
+def start_vllm_yoco_server(args: argparse.Namespace) -> None:
     vllm_cmd = (
-        "python",
-        "-m",
-        "vllm.entrypoints.api_server",
+        "/home/aiscuser/.local/bin/vllm",
+        "serve",
+        args.model,
         "--host",
         "127.0.0.1",
         "--port",
         "26500",
-        "--model",
-        args.model,
         "--trust-remote-code",
         "--load-format",
         args.load_format,
         "--enforce-eager", 
         "--max-model-len",
         "100000",
-        #"--dtype auto",
+        "--served-model-name",
+        BENCHMARK_MODEL_NAME,
     )
+
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
     )
+
     start_time = time.time()
     timeout_after = 60 * 5  # 5 minutes
     while True:
@@ -93,11 +94,11 @@ def start_yoco_vllm_server(args: argparse.Namespace) -> None:
             break
         if "error" in line.lower():
             p.terminate()
-            stop_vllm_server(args)
+            stop_vllm_yoco_server(args)
             raise RuntimeError(f"Error starting VLLM server: {line}")
         if time.time() - start_time > timeout_after:
             p.terminate()
-            stop_vllm_server(args)
+            stop_vllm_yoco_server(args)
             raise TimeoutError("Timed out waiting for VLLM server to start")
         time.sleep(0.01)
 
@@ -142,15 +143,23 @@ def stop_server(args: argparse.Namespace) -> None:
     stop_server_fns = {
         "fastgen": stop_fastgen_server,
         "vllm": stop_vllm_server,
+        "vllmyoco": stop_vllm_yoco_server,
         "aml": stop_aml_server,
         "openai": stop_openai_server,
     }
+    print(f"!!! KILL VLLM YOCO !!! {args.backend=} {stop_server_fns[args.backend]=}")
     stop_fn = stop_server_fns[args.backend]
     stop_fn(args)
 
 
 def stop_vllm_server(args: argparse.Namespace) -> None:
     vllm_cmd = ("pkill", "-f", "vllm.entrypoints.api_server")
+    p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.wait()
+
+
+def stop_vllm_yoco_server(args: argparse.Namespace) -> None:
+    vllm_cmd = ("pkill", "-f", "vllm")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
 
