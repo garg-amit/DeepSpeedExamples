@@ -11,6 +11,7 @@ import os
 import queue
 import random
 import requests
+import subprocess
 import threading
 import time
 from typing import List, Iterable, Union
@@ -209,10 +210,26 @@ def call_vllm_yoco(
     # for h, t in get_streaming_response(response, start_time):
     #     output = h
     #     token_gen_time.append(t)
+
+    PORT = 26500
+    cmd = """
+    curl "http://localhost:26500/v1/completions" \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -d '{"model": "BENCHMARK_MODEL_NAME", "prompt": "San Francisco is a","max_tokens": 32,"temperature": 1.0, "top_p": 0.9, "ignore_eos": true, "stream": true, "n": 1}'
+    """
+    # cmd = f"""
+    # curl "http://localhost:{PORT}/v1/completions" -X POST -H "Content-Type: application/json" -d '{"model": "BENCHMARK_MODEL_NAME", "prompt": "San Francisco is a","max_tokens": 256,"temperature": 1.0, "top_p": 0.9, "ignore_eos": true, "stream": true, "n": 1}'"""
+
+    data = subprocess.run(cmd, capture_output=True, shell=True)
+    data.check_returncode() # https://docs.python.org/3/library/subprocess.html
+    # print(f"{cmd=}")
+    # print(f"{data.stdout=}")
+    # print(f"{data.stderr=}")
+    # print()
+
     output = "debug"
     token_gen_time.extend([1,2,3])
-    import time
-    time.sleep(1)
 
     return ResponseDetails(
         generated_tokens=output,
