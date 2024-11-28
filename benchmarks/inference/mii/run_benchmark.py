@@ -39,8 +39,8 @@ def run_benchmark() -> None:
             if client_args.num_requests is None:
                 client_args.num_requests = client_args.num_clients * 4 + 32
 
-            if args.backend == "vllmyoco":
-                client_args.num_clients = 1 # parallelism seems to cause an error when decoding streaming response
+            # if args.backend == "vllmyoco":
+            #     client_args.num_clients = 1 # parallelism seems to cause an error when decoding streaming response
 
             print(f"\n****CLIENT_ARGS*** {server_args=} {client_args=}\n")
             response_details = run_client(client_args)

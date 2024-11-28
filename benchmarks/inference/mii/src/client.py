@@ -154,12 +154,12 @@ def call_vllm_yoco(
     def get_streaming_response(
         response: requests.Response, time_last_token
     ) -> Iterable[List[str]]:
-        print(f"??? {response.status_code=}")
+        #print(f"??? {response.status_code=}")
         #print(f"{response.content=}") # causes some errors
         #print(f"{response=}")
         # dir(response)=['__attrs__', '__bool__', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__nonzero__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setstate__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_content', '_content_consumed', '_next', 'apparent_encoding', 'close', 'connection', 'content', 'cookies', 'elapsed', 'encoding', 'headers', 'history', 'is_permanent_redirect', 'is_redirect', 'iter_content', 'iter_lines', 'json', 'links', 'next', 'ok', 'raise_for_status', 'raw', 'reason', 'request', 'status_code', 'text', 'url']
         c = 0
-        print(f"??? {response.url=} {response.reason=}")
+        #print(f"??? {response.url=} {response.reason=}")
         for chunk in response.iter_content(chunk_size=512, decode_unicode=False):
             if chunk:
                 output = chunk.decode("utf-8")
@@ -168,7 +168,7 @@ def call_vllm_yoco(
                 time_now = time.time()
                 yield output, time_now - time_last_token
                 time_last_token = time_now
-
+    import time # shutup?
     token_gen_time = []
     start_time = time.time()
 
@@ -192,10 +192,11 @@ def call_vllm_yoco(
     # if retry_count == max_retries:
     #     print("!!! MAX RETRIES MET !!!")
 
-    #print(f"^^^ PROMPT {input_tokens=}")
-    # CONFIRMED this works?
-    print(f" ### {api_url=}")
-    response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+    # # ignore request entirely for now
+    # #print(f"^^^ PROMPT {input_tokens=}")
+    # # CONFIRMED this works?
+    # print(f" ### {api_url=}")
+    # response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
 
     # # CONFIRMED this works
     # headers = {"Content-Type": "application/json"}
@@ -203,10 +204,15 @@ def call_vllm_yoco(
     
     # # GET?
     # response = requests.get(api_url, headers=headers, data=json.dumps(pload), stream=args.stream)
-    
-    for h, t in get_streaming_response(response, start_time):
-        output = h
-        token_gen_time.append(t)
+
+    # # ignore request entirely for now
+    # for h, t in get_streaming_response(response, start_time):
+    #     output = h
+    #     token_gen_time.append(t)
+    output = "debug"
+    token_gen_time.extend([1,2,3])
+    import time
+    time.sleep(1)
 
     return ResponseDetails(
         generated_tokens=output,
@@ -390,11 +396,11 @@ def _run_parallel(
     except queue.Empty:
         print(f"queue is empty ({pid})")
     
-    print("### BARRIER WAIT RUNPAR")
-    print(f"{barrier.n_waiting=}")
-    print(f"{barrier.broken=}")
-    barrier.wait()
-    print("### BARRIER DONE RUNPAR")
+    # print("### BARRIER WAIT RUNPAR")
+    # print(f"{barrier.n_waiting=}")
+    # print(f"{barrier.broken=}")
+    # barrier.wait()
+    # print("### BARRIER DONE RUNPAR")
 
     print(f"Worker ({pid}) finished. session_id: {session_id}")
 
@@ -477,12 +483,12 @@ def run_client(args):
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]
         response_details.append(res)
 
-    print("### BARRIER WAIT")
-    print(f"{barrier.n_waiting=}")  # 0
-    print(f"{barrier.broken=}")     # false
-    barrier.wait()
-    # barrier.reset()
-    print("### BARRIER DONE")
+    # print("### BARRIER WAIT")
+    # print(f"{barrier.n_waiting=}")  # 0
+    # print(f"{barrier.broken=}")     # false
+    # barrier.wait()
+    # # barrier.reset()
+    # print("### BARRIER DONE")
     return response_details
 
 
