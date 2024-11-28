@@ -159,9 +159,10 @@ def stop_vllm_server(args: argparse.Namespace) -> None:
 
 
 def stop_vllm_yoco_server(args: argparse.Namespace) -> None:
-    vllm_cmd = ("pkill", "-f", "vllm")
+    vllm_cmd = ("pkill", "-f", "/home/aiscuser/.local/bin/vllm")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
+    time.sleep(60)
 
 
 def stop_fastgen_server(args: argparse.Namespace) -> None:

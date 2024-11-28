@@ -1,4 +1,0 @@
-matplotlib
-deepspeed-mii>=0.2.0
-numpy
-tabulate
