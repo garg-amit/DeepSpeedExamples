@@ -68,6 +68,12 @@ def parse_args(
     server_parser.add_argument(
         "--client_only", action="store_true", help="Run client only with server started"
     )
+    server_parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="host" # localhost?
+    )
+    server_parser.add_argument(
+        "--port", type=str, default="26500", help="port"
+    )
 
 
     # Client args

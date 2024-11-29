@@ -69,9 +69,9 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         "serve",
         args.model,
         "--host",
-        "127.0.0.1",
+        args.host,
         "--port",
-        "26500",
+        args.port,
         "--trust-remote-code",
         "--load-format",
         args.load_format,
@@ -147,6 +147,7 @@ def stop_server(args: argparse.Namespace) -> None:
         "aml": stop_aml_server,
         "openai": stop_openai_server,
     }
+    time.sleep(10)
     print(f"!!! KILL VLLM YOCO !!! {args.backend=} {stop_server_fns[args.backend]=}")
     stop_fn = stop_server_fns[args.backend]
     stop_fn(args)
@@ -162,7 +163,6 @@ def stop_vllm_yoco_server(args: argparse.Namespace) -> None:
     vllm_cmd = ("pkill", "-f", "/home/aiscuser/.local/bin/vllm")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
-    time.sleep(60)
 
 
 def stop_fastgen_server(args: argparse.Namespace) -> None:
