@@ -10,10 +10,13 @@ import multiprocessing
 import os
 import queue
 import random
+import re
 import requests
 import subprocess
 import threading
 import time
+
+from concurrent.futures import ProcessPoolExecutor, wait
 from typing import List, Iterable, Union
 
 import numpy as np
@@ -132,53 +135,47 @@ def call_vllm(
     )
 
 
-def call_vllm_yoco(
-    input_tokens: str, max_new_tokens: int, args: argparse.Namespace
-) -> ResponseDetails:
-    if not args.stream:
-        raise NotImplementedError("Not implemented for non-streaming")
+class TimeoutError(RuntimeError):
+    pass
 
+def call_vllm_yoco(prompt, max_new_tokens: int):
+    """This is a worker function"""
+    input_tokens = prompt #"San Francisco is a"
     pload = {
-        "model": BENCHMARK_MODEL_NAME,
+        "model": "BENCHMARK_MODEL_NAME",
         "prompt": input_tokens,
         "n": 1,
         "temperature": 1.0,
         "top_p": 0.9,
         "max_tokens": max_new_tokens,
         "ignore_eos": True,
-        "stream": args.stream,
+        "stream": True,
     }
 
-    cmd = f"""
-    curl "http://{args.host}:{args.port}/v1/completions" -X POST -H "Content-Type: application/json" -d '{json.dumps(pload, ensure_ascii=False)}'
-    """
+    # TODO error??? /bin/sh: 3: Syntax error: Unterminated quoted string
+    pload_json = json.dumps(pload, ensure_ascii=False)
+    print(f"{pload_json=}")
+    cmd = f"""curl "http://localhost:26501/v1/completions" -X POST -H "Content-Type: application/json" -d '{pload_json}'"""
     # TODO no buffering? https://stackoverflow.com/questions/8362428/stream-response-from-curl-request-without-waiting-for-it-to-finish
     output = ""
     start_time = time.time()
-    token_gen_time = []
-
-    from dataclasses import dataclass
-
-    @dataclass
-    class Data:
-        returncode: int = -1
-        stderr: str = ""
-        stdout: str = ""
-
-    import numpy as np
-    time.sleep(2*np.random.random())
-
     last_data = None
     retries = 0
-    MAX_RETRIES = 2
+    MAX_RETRIES = 4
     while retries <= MAX_RETRIES:
         try:
             start_time = time.time()
             data = subprocess.run(cmd, capture_output=True, shell=True)
-            #data = Data(returncode=9, stderr="ERR", stdout="OUT")
-            token_gen_time = [int(time.time() - start_time)] * pload["max_tokens"] # this doesn't appear to be used in postprocess_results anyway
             last_data = data
-            # print(f"\n{data.returncode=} {data.stdout=} {data.stderr=} {cmd=}")
+            # TODO need something better than this, maybe generator? Or we could use `requests`
+            # For this hack just do a bunch of ints since dependent on `get_summary` which only needs length conditional on type != str
+            # see `get_summary`
+            output1 = data.stdout.decode('utf-8')
+            output = len(re.findall('finish_reason":\s*(null|"length")', output1, re.M)) * [1]
+
+            # # for debugging
+            # print(f"{len(output)=} {output=}")
+            # print(data.stderr.decode('utf-8'))
             data.check_returncode() # https://docs.python.org/3/library/subprocess.html
             break
         except subprocess.CalledProcessError:
@@ -187,14 +184,18 @@ def call_vllm_yoco(
             # print(f"\n{last_data.returncode=} {last_data.stdout=} {last_data.stderr=} {cmd=}")
 
     if retries >= MAX_RETRIES:
-        print("!!! MAX RETRIES !!!")
-        print(f"\n{last_data.returncode=} {last_data.stdout=} {last_data.stderr=} {cmd=}")
+        # print("!!! MAX RETRIES !!!")
+        # print(f"\n{last_data.returncode=} {last_data.stdout=} {last_data.stderr=} {cmd=}")
+        raise TimeoutError("Maxed out the retries for the request!")
+    
+    end_time = time.time()
+    token_gen_time = [float(end_time - start_time)] * 3 # this doesn't appear to be used in postprocess_results anyway
 
     return ResponseDetails(
         generated_tokens=output,
         prompt=input_tokens,
         start_time=start_time,
-        end_time=time.time(),
+        end_time=end_time,
         model_time=0,
         token_gen_time=token_gen_time,
     )
@@ -348,7 +349,7 @@ def _run_parallel(
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
-    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm_yoco, "aml": call_aml, "openai": call_openai}
+    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "aml": call_aml, "openai": call_openai}
     call_fn = backend_call_fns[args.backend]
 
     barrier.wait()
@@ -371,12 +372,6 @@ def _run_parallel(
             result_queue.put(r)
     except queue.Empty:
         print(f"queue is empty ({pid})")
-    
-    # print("### BARRIER WAIT RUNPAR")
-    # print(f"{barrier.n_waiting=}")
-    # print(f"{barrier.broken=}")
-    # barrier.wait()
-    # print("### BARRIER DONE RUNPAR")
 
     print(f"Worker ({pid}) finished. session_id: {session_id}")
 
@@ -459,12 +454,74 @@ def run_client(args):
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]
         response_details.append(res)
 
-    # print("### BARRIER WAIT")
-    # print(f"{barrier.n_waiting=}")  # 0
-    # print(f"{barrier.broken=}")     # false
-    # barrier.wait()
-    # # barrier.reset()
-    # print("### BARRIER DONE")
+    return response_details
+
+
+def run_client_concurrent_futures(args):
+
+    # 1. Get texts per rand distn
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42)
+    request_text = query_generator.get_random_request_text(
+        args.mean_prompt_length,
+        args.mean_prompt_length * args.prompt_length_var,
+        args.max_prompt_length,
+        args.num_requests + args.warmup * args.num_clients,
+    )
+
+    print(f"{args.num_requests=} {args.warmup=} {args.num_clients=}")
+
+    prompt_texts_maxtoks = []
+    for t in request_text:
+        # Set max_new_tokens following normal distribution
+        req_max_new_tokens = int(
+            np.random.normal(
+                args.mean_max_new_tokens,
+                args.max_new_tokens_var * args.mean_max_new_tokens,
+            )
+        )
+        prompt_texts_maxtoks.append((t, req_max_new_tokens))
+
+    pool_size = args.num_clients
+
+    # 2 Warmup
+    np.random.seed(2024)
+    with ProcessPoolExecutor(max_workers=pool_size) as executor:
+        futures = []
+        for i in np.random.randint(len(prompt_texts_maxtoks), size=args.warmup):
+            input_tokens, req_max_new_tokens = prompt_texts_maxtoks[i]
+            future = executor.submit(call_vllm_yoco, input_tokens, req_max_new_tokens)
+            futures.append(future)
+        print("~~~ Waiting on warmup ~~~")
+        wait(futures)
+
+    # time.sleep(3) # needed for PPE on our infra to fully delete and heal? NOPE
+
+    # 3 Call
+    with ProcessPoolExecutor(max_workers=pool_size) as executor:
+        futures = []
+        for i in np.random.permutation(list(range(len(prompt_texts_maxtoks)))):
+            input_tokens, req_max_new_tokens = prompt_texts_maxtoks[i]
+            future = executor.submit(call_vllm_yoco, input_tokens, req_max_new_tokens)
+            futures.append(future)
+        print("~~~ Waiting on submit ~~~")
+        wait(futures)
+
+    # 4 Pre-postprocess
+    response_details = []
+    timeouts = 0
+    for fut in futures:
+        try:
+            res = fut.result()
+            response_details.append(res)
+        except TimeoutError:
+            timeouts += 1
+    
+    if timeouts > 0:
+        print(f"!!! {timeouts=} ({timeouts/len(futures):.2%})")
+
+    # time.sleep(3) # needed for PPE on our infra to fully delete and heal? NOPE
+
     return response_details
 
 
@@ -472,6 +529,9 @@ if __name__ == "__main__":
     args = parse_args(client_args=True)
 
     for client_args in get_args_product(args, which=CLIENT_PARAMS):
-        response_details = run_client(client_args)
+        if args.backend == "vllmyoco":
+            response_details = run_client_concurrent_futures(client_args)
+        else:
+            response_details = run_client(client_args)
 
         print_summary(client_args, response_details)
