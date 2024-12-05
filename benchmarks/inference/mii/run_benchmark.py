@@ -22,19 +22,13 @@ def run_benchmark() -> None:
         print(f"\n****SERVER_ARGS*** {args=} {server_args=}")
         if server_args.backend != "aml" and not server_args.client_only:
             start_server(server_args)
-            # # for starting server here and calling with curl
-            # from time import sleep
-            # sleep(1000)
+
         for client_args in get_args_product(server_args, which=CLIENT_PARAMS):
             if results_exist(client_args) and not args.overwrite_results:
                 print(
                     f"Found existing results and skipping current setting. To ignore existing results, use --overwrite_results"
                 )
                 continue
-
-            # # nope
-            # if server_args.backend == "vllmyoco" and not server_args.client_only:
-            #     start_server(server_args)
 
             if client_args.num_requests is None:
                 client_args.num_requests = client_args.num_clients * 4 + 32
@@ -46,14 +40,6 @@ def run_benchmark() -> None:
             response_details = run_client(client_args)
             print_summary(client_args, response_details)
             save_json_results(client_args, response_details)
-
-            # # nope
-            # import time
-            # time.sleep(30)
-
-            # # nope
-            # if server_args.backend == "vllmyoco" and not server_args.client_only:
-            #     stop_server(server_args)
 
         if server_args.backend != "aml" and not server_args.client_only:
             stop_server(server_args)

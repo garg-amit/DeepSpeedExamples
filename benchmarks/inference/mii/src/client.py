@@ -137,10 +137,10 @@ def call_vllm_yoco(
     if not args.stream:
         raise NotImplementedError("Not implemented for non-streaming")
 
-    api_url = "http://localhost:26500/v1/completions" # "http://localhost:26500/generate"
+    # TODO put in args
+    api_url = "http://localhost:26500/v1/completions"
     headers = {"User-Agent": "Benchmark Client"}
     pload = {
-        #"model": "/data/users/adatkins/dev/phivnext/yoco/yocov2/v2_hf_ws_3att/yocov2_samba_hf", # TODO we can change this with some vllm arg
         "model": BENCHMARK_MODEL_NAME,
         "prompt": input_tokens,
         "n": 1,
@@ -154,65 +154,60 @@ def call_vllm_yoco(
     def get_streaming_response(
         response: requests.Response, time_last_token
     ) -> Iterable[List[str]]:
-        #print(f"??? {response.status_code=}")
-        #print(f"{response.content=}") # causes some errors
-        #print(f"{response=}")
-        # dir(response)=['__attrs__', '__bool__', '__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__nonzero__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setstate__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_content', '_content_consumed', '_next', 'apparent_encoding', 'close', 'connection', 'content', 'cookies', 'elapsed', 'encoding', 'headers', 'history', 'is_permanent_redirect', 'is_redirect', 'iter_content', 'iter_lines', 'json', 'links', 'next', 'ok', 'raise_for_status', 'raw', 'reason', 'request', 'status_code', 'text', 'url']
         c = 0
-        #print(f"??? {response.url=} {response.reason=}")
+
+        # This works with the base vLLM version customized with our YOCOv2 implementation
         for chunk in response.iter_content(chunk_size=512, decode_unicode=False):
             if chunk:
                 output = chunk.decode("utf-8")
+        
+                # # to decode the token:
+                # # NOTE this will take more time so comment out as debug
+                # all_output = output
+                # output = ":".join(output.strip().split(':')[1:])
+                # try:
+                #     output = json.loads(output)
+                #     output = output["choices"][0]["text"]
+                # except json.JSONDecodeError:
+                #     output = "[DONE]"
+
+                # print(f"{c=} {max_new_tokens=} {output=} {all_output=}")
                 # c += 1
-                # print(f"{c=} {max_new_tokens=} {output=}")
+
                 time_now = time.time()
                 yield output, time_now - time_last_token
                 time_last_token = time_now
-    import time # shutup?
+
     token_gen_time = []
     start_time = time.time()
 
-    # def retry():
-    #     #response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
-    #     for h, t in get_streaming_response(response, start_time):
-    #         output = h
-    #         token_gen_time.append(t)
-    
-    # retry_count = 0
-    # output = "uh"
-    # max_retries = 5
-    # while retry_count < max_retries:
-    #     try:
-    #         retry()
-    #         break
-    #     except requests.exceptions.ChunkedEncodingError as e:
-    #         retry_count += 1
-    #         print(f"caught and swallowed ChunkedEncodingError {retry_count=}")
+    retry_count = 0
+    output = None
+    max_retries = 2
 
-    # if retry_count == max_retries:
-    #     print("!!! MAX RETRIES MET !!!")
 
-    # # ignore request entirely for now
-    # #print(f"^^^ PROMPT {input_tokens=}")
-    # # CONFIRMED this works?
-    # print(f" ### {api_url=}")
-    # response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+    while retry_count <= max_retries:
+        try:
+            response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
+            for h, t in get_streaming_response(response, start_time):
+                output = h
+                token_gen_time.append(t)
+            break
+        except requests.exceptions.ChunkedEncodingError as e:
+            retry_count += 1
+            print(f"caught and swallowed ChunkedEncodingError {retry_count=}")
 
-    # # CONFIRMED this works
-    # headers = {"Content-Type": "application/json"}
-    # response = requests.post(api_url, headers=headers, data=json.dumps(pload), stream=args.stream)
-    
-    # # GET?
-    # response = requests.get(api_url, headers=headers, data=json.dumps(pload), stream=args.stream)
-
-    # # ignore request entirely for now
-    # for h, t in get_streaming_response(response, start_time):
-    #     output = h
-    #     token_gen_time.append(t)
-    output = "debug"
-    token_gen_time.extend([1,2,3])
-    import time
-    time.sleep(1)
+    if retry_count == max_retries:
+        print("!!! MAX RETRIES MET !!!")
+        # TODO exception?
+        return ResponseDetails(
+            generated_tokens="ERROR",
+            prompt=input_tokens,
+            start_time=start_time,
+            end_time=time.time(),
+            model_time=0,
+            token_gen_time=token_gen_time,
+        )
 
     return ResponseDetails(
         generated_tokens=output,
@@ -396,11 +391,6 @@ def _run_parallel(
     except queue.Empty:
         print(f"queue is empty ({pid})")
     
-    # print("### BARRIER WAIT RUNPAR")
-    # print(f"{barrier.n_waiting=}")
-    # print(f"{barrier.broken=}")
-    # barrier.wait()
-    # print("### BARRIER DONE RUNPAR")
 
     print(f"Worker ({pid}) finished. session_id: {session_id}")
 
@@ -478,17 +468,12 @@ def run_client(args):
         res = result_queue.get()
         # vLLM returns concatinated tokens
         if "vllm" in args.backend:
+            # print(f"{res.generated_tokens=}")
             all_tokens = tokenizer.tokenize(res.generated_tokens)
             all_tokens = [item.decode(errors='ignore') if isinstance(item, bytes) else item for item in all_tokens]
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]
         response_details.append(res)
 
-    # print("### BARRIER WAIT")
-    # print(f"{barrier.n_waiting=}")  # 0
-    # print(f"{barrier.broken=}")     # false
-    # barrier.wait()
-    # # barrier.reset()
-    # print("### BARRIER DONE")
     return response_details
 
 
