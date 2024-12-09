@@ -8,23 +8,26 @@ MODELS=(
     /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii/dummy_checkpoints/yocov2_samba_no_da_hf
     # /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii/dummy_checkpoints/yocov2_samba_da_hf # TODO
 )
-OUT_DIR=./results_yocov2_full
+OUT_DIR=./results_yocov2_sans_da_full_redo # TODO
 LOAD_FORMAT=dummy
-BACKEND="yoco"
+BACKEND="vllmyoco"
 
 for MODEL in ${MODELS[@]}; do
-    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 2600 --mean_max_new_tokens 60 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-
-    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 1300 --mean_max_new_tokens 120 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-
-    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 650 --mean_max_new_tokens 240 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
-
     python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 500 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
 
     python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 4000 --mean_max_new_tokens 500 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
 
     python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 4000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
 
+
+
+    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 2600 --mean_max_new_tokens 60 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
+
+    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 1300 --mean_max_new_tokens 120 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
+
+    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 650 --mean_max_new_tokens 240 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
+
     python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 8000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
 
-    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 16000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --streamdone
+    python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --mean_prompt_length 500 --mean_max_new_tokens 16000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream
+done
