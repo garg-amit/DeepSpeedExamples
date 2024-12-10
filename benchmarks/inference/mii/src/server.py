@@ -4,6 +4,7 @@
 # DeepSpeed Team
 
 import argparse
+import os
 import subprocess
 import time
 
@@ -34,7 +35,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--host",
         "127.0.0.1",
         "--port",
-        "26500",
+        str(args.port),
         "--tensor-parallel-size",
         str(args.tp_size),
         "--model",
@@ -43,8 +44,10 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--load-format",
         args.load_format
     )
+    my_env = os.environ.copy()
+    my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
     p = subprocess.Popen(
-        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
+        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
     )
     start_time = time.time()
     timeout_after = 60 * 5  # 5 minutes
@@ -71,7 +74,7 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         "--host",
         "127.0.0.1",
         "--port",
-        "26500",
+        str(args.port),
         "--trust-remote-code",
         "--load-format",
         args.load_format,
@@ -82,8 +85,10 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         BENCHMARK_MODEL_NAME,
     )
 
+    my_env = os.environ.copy()
+    my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
     p = subprocess.Popen(
-        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
+        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
     )
 
     start_time = time.time()
