@@ -76,67 +76,6 @@ def call_vllm(
     if not args.stream:
         raise NotImplementedError("Not implemented for non-streaming")
 
-    api_url = "http://localhost:26500/generate"
-    headers = {"User-Agent": "Benchmark Client"}
-    pload = {
-        "prompt": input_tokens,
-        "n": 1,
-        # "use_beam_search": False,
-        "temperature": 1.0,
-        "top_p": 0.9,
-        "max_tokens": max_new_tokens,
-        "ignore_eos": True, #False,
-        "stream": args.stream,
-    }
-
-    def clear_line(n: int = 1) -> None:
-        LINE_UP = "\033[1A"
-        LINE_CLEAR = "\x1b[2K"
-        for _ in range(n):
-            print(LINE_UP, end=LINE_CLEAR, flush=True)
-
-    def get_streaming_response(
-        response: requests.Response, time_last_token
-    ) -> Iterable[List[str]]:
-        for chunk in response.iter_lines(
-            chunk_size=8192, decode_unicode=False, delimiter=b"\0"
-        ):
-            if chunk:
-                data = json.loads(chunk.decode("utf-8"))
-                output = data["text"][0]
-                time_now = time.time()
-                yield output, time_now - time_last_token
-                time_last_token = time_now
-
-    # For non-streaming, but currently non-streaming is not fully implemented
-    def get_response(response: requests.Response) -> List[str]:
-        data = json.loads(response.content)
-        output = data["text"]
-        return output
-
-    token_gen_time = []
-    start_time = time.time()
-    response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
-    for h, t in get_streaming_response(response, start_time):
-        output = h
-        token_gen_time.append(t)
-
-    return ResponseDetails(
-        generated_tokens=output,
-        prompt=input_tokens,
-        start_time=start_time,
-        end_time=time.time(),
-        model_time=0,
-        token_gen_time=token_gen_time,
-    )
-
-
-def call_vllm_yoco(
-    input_tokens: str, max_new_tokens: int, args: argparse.Namespace
-) -> ResponseDetails:
-    if not args.stream:
-        raise NotImplementedError("Not implemented for non-streaming")
-
     # TODO put in args
     api_url = "http://localhost:26500/v1/completions"
     headers = {"User-Agent": "Benchmark Client"}
@@ -367,7 +306,7 @@ def _run_parallel(
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
-    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm_yoco, "aml": call_aml, "openai": call_openai}
+    backend_call_fns = {"fastgen": call_fastgen, "vllm": call_vllm, "vllmyoco": call_vllm, "aml": call_aml, "openai": call_openai}
     call_fn = backend_call_fns[args.backend]
 
     barrier.wait()
