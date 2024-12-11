@@ -79,6 +79,8 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         "100000",
         "--served-model-name",
         BENCHMARK_MODEL_NAME,
+        "--tensor-parallel-size",
+        str(args.tp_size),
     )
 
     p = subprocess.Popen(
