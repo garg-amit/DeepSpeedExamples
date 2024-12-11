@@ -75,7 +75,6 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         "--trust-remote-code",
         "--load-format",
         args.load_format,
-        "--enforce-eager", 
         "--max-model-len",
         "100000",
         "--served-model-name",
