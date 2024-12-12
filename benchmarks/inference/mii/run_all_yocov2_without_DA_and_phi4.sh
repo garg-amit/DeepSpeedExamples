@@ -8,10 +8,9 @@ MODELS=(
     /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii/dummy_checkpoints/yocov2_samba_no_da_hf
     /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii/dummy_checkpoints/phi4mini_tied-gqa3-attn_head24_llama_impl
     /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii/dummy_checkpoints/phi4mini_tied-gqa3-attn_head24_phi_impl_new_Tversion
+    microsoft/Phi-3.5-mini-instruct
 )
-# MODELS=(
-#     microsoft/Phi-3.5-mini-instruct
-# )
+
 OUT_DIR=./results_yocov2_without_DA_plus_phi4_less_concurrency_p1_shortgen
 LOAD_FORMAT=dummy
 BACKEND="vllm"

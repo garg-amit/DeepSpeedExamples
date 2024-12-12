@@ -14,6 +14,12 @@ VLLM_ALLOW_LONG_MAX_MODEL_LEN=true /home/aiscuser/.local/bin/vllm serve /data/us
 
 curl http://localhost:26500/v1/completions -H "Content-Type: application/json" -d '{"prompt": "San Francisco is a","max_tokens": 128,"temperature": 0.1, "top_p": 0.95, "ignore_eos": true, "stream": true, "n":1, "model": "BENCHMARK_MODEL_NAME"}'
 ################
+# PHI35 BASELINE - SERVER - EXE - WORKING
+VLLM_ALLOW_LONG_MAX_MODEL_LEN=true /home/aiscuser/.local/bin/vllm serve microsoft/Phi-3.5-mini-instruct --host 127.0.0.1 --port 26500 --trust-remote-code --load-format dummy --served-model-name "BENCHMARK_MODEL_NAME" --tensor-parallel-size 1 --max-model-len 100000
+
+
+
+
 
 
 

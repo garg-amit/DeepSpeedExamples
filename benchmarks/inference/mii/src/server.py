@@ -27,6 +27,11 @@ def start_server(args: argparse.Namespace) -> None:
 
 
 def start_vllm_server(args: argparse.Namespace) -> None:
+    # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
+    max_model_len = 100000
+    if "phi-3.5-mini" in args.model.lower():
+        max_model_len = 30000
+
     vllm_cmd = (
         "/home/aiscuser/.local/bin/vllm",
         "serve",
@@ -43,7 +48,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--tensor-parallel-size",
         str(args.tp_size),
         "--max-model-len",
-        "100000",
+        str(max_model_len),
     ) # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
 
     my_env = os.environ.copy()
