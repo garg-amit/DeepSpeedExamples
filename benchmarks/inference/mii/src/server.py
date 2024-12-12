@@ -19,7 +19,6 @@ def start_server(args: argparse.Namespace) -> None:
     start_server_fns = {
         "fastgen": start_fastgen_server,
         "vllm": start_vllm_server,
-        "vllmyoco": start_vllm_yoco_server,
         "aml": start_aml_server,
         "openai": start_openai_server,
     }
@@ -28,45 +27,11 @@ def start_server(args: argparse.Namespace) -> None:
 
 
 def start_vllm_server(args: argparse.Namespace) -> None:
-    vllm_cmd = (
-        "python",
-        "-m",
-        "vllm.entrypoints.api_server",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        str(args.port),
-        "--tensor-parallel-size",
-        str(args.tp_size),
-        "--model",
-        args.model,
-        "--trust-remote-code",
-        "--load-format",
-        args.load_format
-    )
-    my_env = os.environ.copy()
-    my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
-    p = subprocess.Popen(
-        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
-    )
-    start_time = time.time()
-    timeout_after = 60 * 5  # 5 minutes
-    while True:
-        line = p.stderr.readline().decode("utf-8")
-        if "Application startup complete" in line:
-            break
-        if "error" in line.lower():
-            p.terminate()
-            stop_vllm_server(args)
-            raise RuntimeError(f"Error starting VLLM server: {line}")
-        if time.time() - start_time > timeout_after:
-            p.terminate()
-            stop_vllm_server(args)
-            raise TimeoutError("Timed out waiting for VLLM server to start")
-        time.sleep(0.01)
+    # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
+    max_model_len = 100000
+    if "phi-3.5-mini" in args.model.lower():
+        max_model_len = 30000
 
-
-def start_vllm_yoco_server(args: argparse.Namespace) -> None:
     vllm_cmd = (
         "/home/aiscuser/.local/bin/vllm",
         "serve",
@@ -78,34 +43,37 @@ def start_vllm_yoco_server(args: argparse.Namespace) -> None:
         "--trust-remote-code",
         "--load-format",
         args.load_format,
-        "--enforce-eager", 
-        "--max-model-len",
-        "100000",
         "--served-model-name",
         BENCHMARK_MODEL_NAME,
-    )
+        "--tensor-parallel-size",
+        str(args.tp_size),
+        "--max-model-len",
+        str(max_model_len),
+    ) # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
 
     my_env = os.environ.copy()
+    my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true"
     my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
+
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
     )
-
     start_time = time.time()
     timeout_after = 60 * 5  # 5 minutes
     while True:
+        #line = "".join([l.decode("utf-8") for l in p.stderr.readlines()]) # causes a hang!!
         line = p.stderr.readline().decode("utf-8")
         if "Application startup complete" in line:
             break
         if "error" in line.lower():
             p.terminate()
-            stop_vllm_yoco_server(args)
+            stop_vllm_server(args)
             raise RuntimeError(f"Error starting VLLM server: {line}")
         if time.time() - start_time > timeout_after:
             p.terminate()
-            stop_vllm_yoco_server(args)
+            stop_vllm_server(args)
             raise TimeoutError("Timed out waiting for VLLM server to start")
-        time.sleep(0.01)
+        time.sleep(1)
 
 
 def start_fastgen_server(args: argparse.Namespace) -> None:
@@ -148,26 +116,19 @@ def stop_server(args: argparse.Namespace) -> None:
     stop_server_fns = {
         "fastgen": stop_fastgen_server,
         "vllm": stop_vllm_server,
-        "vllmyoco": stop_vllm_yoco_server,
         "aml": stop_aml_server,
         "openai": stop_openai_server,
     }
     print(f"!!! KILL VLLM YOCO !!! {args.backend=} {stop_server_fns[args.backend]=}")
     stop_fn = stop_server_fns[args.backend]
     stop_fn(args)
+    time.sleep(10)
 
 
 def stop_vllm_server(args: argparse.Namespace) -> None:
-    vllm_cmd = ("pkill", "-f", "vllm.entrypoints.api_server")
-    p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-
-
-def stop_vllm_yoco_server(args: argparse.Namespace) -> None:
     vllm_cmd = ("pkill", "-f", "/home/aiscuser/.local/bin/vllm")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
-    time.sleep(60)
 
 
 def stop_fastgen_server(args: argparse.Namespace) -> None:
