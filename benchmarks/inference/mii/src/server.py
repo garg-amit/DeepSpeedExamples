@@ -19,7 +19,6 @@ def start_server(args: argparse.Namespace) -> None:
     start_server_fns = {
         "fastgen": start_fastgen_server,
         "vllm": start_vllm_server,
-        "vllmyoco": start_vllm_server, #start_vllm_yoco_server,
         "aml": start_aml_server,
         "openai": start_openai_server,
     }
@@ -111,26 +110,19 @@ def stop_server(args: argparse.Namespace) -> None:
     stop_server_fns = {
         "fastgen": stop_fastgen_server,
         "vllm": stop_vllm_server,
-        "vllmyoco": stop_vllm_yoco_server,
         "aml": stop_aml_server,
         "openai": stop_openai_server,
     }
     print(f"!!! KILL VLLM YOCO !!! {args.backend=} {stop_server_fns[args.backend]=}")
     stop_fn = stop_server_fns[args.backend]
     stop_fn(args)
+    time.sleep(10)
 
 
 def stop_vllm_server(args: argparse.Namespace) -> None:
-    vllm_cmd = ("pkill", "-f", "vllm.entrypoints.api_server")
-    p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-
-
-def stop_vllm_yoco_server(args: argparse.Namespace) -> None:
     vllm_cmd = ("pkill", "-f", "/home/aiscuser/.local/bin/vllm")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
-    time.sleep(60)
 
 
 def stop_fastgen_server(args: argparse.Namespace) -> None:
