@@ -39,7 +39,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--host",
         "127.0.0.1",
         "--port",
-        "26500",
+        str(args.port),
         "--trust-remote-code",
         "--load-format",
         args.load_format,
@@ -53,6 +53,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
 
     my_env = os.environ.copy()
     my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true"
+    my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
 
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env

@@ -76,8 +76,7 @@ def call_vllm(
     if not args.stream:
         raise NotImplementedError("Not implemented for non-streaming")
 
-    # TODO put in args
-    api_url = "http://localhost:26500/v1/completions"
+    api_url = f"http://localhost:{args.port}/v1/completions"
     headers = {"User-Agent": "Benchmark Client"}
     pload = {
         "model": BENCHMARK_MODEL_NAME,

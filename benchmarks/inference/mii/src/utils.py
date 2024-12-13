@@ -68,6 +68,18 @@ def parse_args(
     server_parser.add_argument(
         "--client_only", action="store_true", help="Run client only with server started"
     )
+    server_parser.add_argument(
+        "--cuda_visible_devices",
+        type=int,
+        default=0,
+        help="CUDA_VISIBLE_DEVICES for the server"
+    )
+    server_parser.add_argument(
+        "--port",
+        type=int,
+        default=26500,
+        help="Port to run server on",
+    )
 
 
     # Client args
