@@ -17,7 +17,7 @@ sampling_params = SamplingParams(
     temperature=0.8,
     top_p=0.95,
     ignore_eos=True,
-    max_tokens=1024,
+    max_tokens=16000,
 )
 
 # [rank0]: ValueError: The model's max seq len (262144) is larger than the maximum number of tokens that can be stored in KV cache (164016). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
@@ -30,12 +30,14 @@ llm = LLM(
     trust_remote_code=True,
     tensor_parallel_size=1,
     max_model_len=100000, # kwargs passed to the engine
+    enforce_eager=True, # disable CUDA graph. tmp fix to issue: `yoco_input_block_tables[i, :len(yoco_block_table)] = yoco_block_table`
 )
 # Generate texts from the prompts. The output is a list of RequestOutput objects
 # that contain the prompt, generated text, and other information.
 outputs = llm.generate(prompts, sampling_params)
 # Print the outputs.
-for output in outputs:
+for i, output in enumerate(outputs):
     prompt = output.prompt
     generated_text = output.outputs[0].text
-    print(f"Prompt: {prompt!r}, Generated text: {generated_text!r}")
+    # print(f"Prompt: {prompt!r}, Generated text: {generated_text!r}")
+    print(i)
