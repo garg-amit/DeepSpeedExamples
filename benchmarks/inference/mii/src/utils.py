@@ -70,8 +70,8 @@ def parse_args(
     )
     server_parser.add_argument(
         "--cuda_visible_devices",
-        type=str,
-        default="0",
+        type=int,
+        default=0,
         help="CUDA_VISIBLE_DEVICES for the server"
     )
     server_parser.add_argument(
