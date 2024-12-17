@@ -85,6 +85,11 @@ def parse_args(
         action="store_true",
         help="Set if you are doing a parallel run",
     )
+    server_parser.add_argument(
+        "--enforce_eager",
+        action="store_true",
+        help="Disable the cuda graph (slower but longer ctx and gen) or not",
+    )
 
 
     # Client args

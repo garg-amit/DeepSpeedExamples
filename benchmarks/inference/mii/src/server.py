@@ -48,8 +48,11 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--tensor-parallel-size",
         str(args.tp_size),
         "--max-model-len",
-        str(max_model_len),
-    ) # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
+        str(max_model_len), # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
+    )
+
+    if args.enforce_eager:
+        vllm_cmd += ("--enforce-eager",)
 
     my_env = os.environ.copy()
     my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true"
