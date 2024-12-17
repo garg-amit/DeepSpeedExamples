@@ -80,6 +80,11 @@ def parse_args(
         default=26500,
         help="Port to run server on",
     )
+    server_parser.add_argument(
+        "--parallel",
+        action="store_true",
+        help="Set if you are doing a parallel run",
+    )
 
 
     # Client args

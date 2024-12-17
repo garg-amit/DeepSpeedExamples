@@ -1,9 +1,9 @@
 #!/bin/bash
 # source me!
-conda create -n myenv2 python=3.10 -y
+conda create -n myenv python=3.10 -y
 ## If conda activate fails, then need to run this command 
-source activate myenv2
-conda activate myenv2
+source activate myenv
+conda activate myenv
 ## verify that the correct env is used by
 conda env list
 
@@ -20,7 +20,7 @@ export NVCC_THREADS=128
 pip install --user -e . -vvv # This may take 5-10 minutes.
 
 # for Amit's benchmark
-pip install matplotlib deepspeed-mii>=0.2.0 tabulate
+pip install matplotlib tabulate deepspeed-mii>=0.2.0 
 
 # opt 2
 pip install uninstall flash-attn
