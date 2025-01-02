@@ -13,9 +13,18 @@ cd /data/users/adatkins/dev/phivnext/yoco/yocov2/vllm
 conda install -y ccache
 export MAX_JOBS=8192 # set this to larger num to make build faster
 export NVCC_THREADS=128
+
+# # opt 1
+# pip install flash-attn==2.4.2 # --force-reinstall should install torch?
+
 pip install --user -e . -vvv # This may take 5-10 minutes.
 
 # for Amit's benchmark
-pip install matplotlib deepspeed-mii>=0.2.0 tabulate
+pip install matplotlib tabulate deepspeed-mii>=0.2.0 
+
+# opt 2
+pip install uninstall flash-attn
+pip install -U flash-attn
+# pip install flash-attn==2.4.2 # fails
 
 cd /data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/inference/mii

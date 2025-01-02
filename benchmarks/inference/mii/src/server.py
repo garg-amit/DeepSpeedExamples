@@ -27,10 +27,12 @@ def start_server(args: argparse.Namespace) -> None:
 
 
 def start_vllm_server(args: argparse.Namespace) -> None:
+    # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
+    max_model_len = 195104
+
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
-    max_model_len = 100000
     if "phi-3.5-mini" in args.model.lower():
-        max_model_len = 30000
+        max_model_len = 30928
 
     vllm_cmd = (
         "/home/aiscuser/.local/bin/vllm",
