@@ -80,7 +80,8 @@ def call_vllm(
     if not args.stream:
         raise NotImplementedError("Not implemented for non-streaming")
 
-    api_url = "http://localhost:26500/generate"
+    # api_url = "http://localhost:26500/generate"
+    api_url = "http://localhost:26500/v1/completions"
     headers = {"User-Agent": "Benchmark Client"}
     pload = {
         "prompt": input_tokens,
@@ -91,6 +92,7 @@ def call_vllm(
         "max_tokens": max_new_tokens,
         "ignore_eos": True, #False,
         "stream": args.stream,
+        "model": args.model
     }
 
     def clear_line(n: int = 1) -> None:
@@ -103,11 +105,14 @@ def call_vllm(
         response: requests.Response, time_last_token
     ) -> Iterable[List[str]]:
         for chunk in response.iter_lines(
-            chunk_size=8192, decode_unicode=False, delimiter=b"\0"
+            chunk_size=8192, decode_unicode=False, delimiter=b"data: "
         ):
             if chunk:
-                data = json.loads(chunk.decode("utf-8"))
-                output = data["text"][0]
+                try:
+                    data = json.loads(chunk.decode("utf-8"))
+                except:
+                    continue
+                output = data['choices'][0]['text']
                 time_now = time.time()
                 yield output, time_now - time_last_token
                 time_last_token = time_now
@@ -135,7 +140,7 @@ def call_vllm(
     )
 
 def call_vllm_chat_completion(
-    input_tokens: str, max_new_tokens: int, args: argparse.Namespace
+    input_tokens: list, max_new_tokens: int, args: argparse.Namespace
 ) -> ResponseDetails:
     if not args.stream:
         raise NotImplementedError("Not implemented for non-streaming")
@@ -143,50 +148,49 @@ def call_vllm_chat_completion(
     api_url = "http://localhost:26500/v1/chat/completions"
     headers = {"User-Agent": "Benchmark Client"}
 
-    if args.use_audio:
-        messages = [{ "role": "user", "content": [
-                {
-                    "type": "text",
-                    "text": input_tokens
-                },
-                {
-                    "type": "audio_url",
-                    "audio_url": {
-                        # Any format supported by librosa is supported
-                        "url": AudioAsset("winning_call").url #f"data:audio/ogg;base64,{audio_base64}"
-                    },
-                },
-            ],
-        }]
-    elif args.use_image:
+    # if args.use_audio:
+    #     messages = [{ "role": "user", "content": [
+    #             {
+    #                 "type": "text",
+    #                 "text": input_tokens
+    #             },
+    #             {
+    #                 "type": "audio_url",
+    #                 "audio_url": {
+    #                     # Any format supported by librosa is supported
+    #                     "url": AudioAsset("winning_call").url #f"data:audio/ogg;base64,{audio_base64}"
+    #                 },
+    #             },
+    #         ],
+    #     }]
+    # elif args.use_image:
 
-        # Convert the image to a BytesIO object
-        buffered = BytesIO()
-        ImageAsset("cherry_blossom").pil_image.save(buffered, format="JPEG")
+    #     # Convert the image to a BytesIO object
+    #     buffered = BytesIO()
+    #     ImageAsset("cherry_blossom").pil_image.save(buffered, format="JPEG")
 
-        # Encode the BytesIO object to base64
-        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    #     # Encode the BytesIO object to base64
+    #     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        messages=[{ "role": "user", "content": [
-                {
-                    "type": "text",
-                    "text": input_tokens
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_str}"
-                            },
-                },
-            ],
-        }]
+    #     messages=[{ "role": "user", "content": [
+    #             {
+    #                 "type": "text",
+    #                 "text": input_tokens
+    #             },
+    #             {
+    #                 "type": "image_url",
+    #                 "image_url": {
+    #                             "url": f"data:image/jpeg;base64,{img_str}"
+    #                         },
+    #             },
+    #         ],
+    #     }]
 
-    else:
-        messages = [{ "role": "user", "content": input_tokens }]
-
+    # else:
+    #     messages = [{ "role": "user", "content": input_tokens }]
     pload = {
         # "prompt": input_tokens,
-        "messages": messages,
+        "messages": input_tokens,
         "n": 1,
         # "use_beam_search": False,
         "temperature": 1.0,
@@ -194,7 +198,7 @@ def call_vllm_chat_completion(
         "max_tokens": max_new_tokens,
         "ignore_eos": True, #False,
         "stream": args.stream,
-        "model": "fixie-ai/ultravox-v0_3",
+        "model": args.model,
     }
 
     def clear_line(n: int = 1) -> None:
@@ -212,13 +216,13 @@ def call_vllm_chat_completion(
             if chunk:
                 try:
                     data = json.loads(chunk.decode("utf-8"))
+                    choice = data['choices'][0]
+                    if 'delta' in choice:
+                        output = choice['delta']['content']
+                    else:
+                        output = choice['message']['content']
                 except:
                     continue
-                choice = data['choices'][0]
-                if 'delta' in choice:
-                    output = choice['delta']['content']
-                else:
-                    output = choice['message']['content']
                 time_now = time.time()
                 yield output, time_now - time_last_token
                 time_last_token = time_now
@@ -231,9 +235,10 @@ def call_vllm_chat_completion(
 
     token_gen_time = []
     start_time = time.time()
+    output = []
     response = requests.post(api_url, headers=headers, json=pload, stream=args.stream)
     for h, t in get_streaming_response(response, start_time):
-        output = h
+        output.append(h)
         token_gen_time.append(t)
 
     return ResponseDetails(
@@ -461,14 +466,13 @@ def run_client(args):
         p.start()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42)
+    query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42, image_dir=args.image_dir)
     request_text = query_generator.get_random_request_text(
         args.mean_prompt_length,
         args.mean_prompt_length * args.prompt_length_var,
         args.max_prompt_length,
         args.num_requests + args.warmup * args.num_clients,
     )
-
     for t in request_text:
         # Set max_new_tokens following normal distribution
         req_max_new_tokens = int(

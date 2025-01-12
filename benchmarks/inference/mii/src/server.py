@@ -28,17 +28,20 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     vllm_cmd = (
-        "python",
-        "-m",
-        "vllm.entrypoints.api_server",
+        # "python",
+        # "-m",
+        # "vllm.entrypoints.api_server",
+        "vllm",
+        "serve",
+        args.model,
         "--host",
         "127.0.0.1",
         "--port",
         "26500",
         "--tensor-parallel-size",
         str(args.tp_size),
-        "--model",
-        args.model,
+        # "--model",
+        # args.model,
         "--trust-remote-code",
         "--load-format",
         args.load_format,
@@ -116,7 +119,8 @@ def stop_server(args: argparse.Namespace) -> None:
 
 
 def stop_vllm_server(args: argparse.Namespace) -> None:
-    vllm_cmd = ("pkill", "-f", "vllm.entrypoints.api_server")
+    # vllm_cmd = ("pkill", "-f", "vllm.entrypoints.api_server")
+    vllm_cmd = ("pkill", "-f", "vllm.serve")
     p = subprocess.Popen(vllm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
 

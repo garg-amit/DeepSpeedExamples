@@ -87,6 +87,9 @@ def parse_args(
         "--use_audio", action="store_true", default=False, help="Whether to use audio input"
     )
     client_parser.add_argument(
+        "--image_dir", type=str, default=None, help="Dir for image inputs"
+    )
+    client_parser.add_argument(
         "--mean_prompt_length",
         type=int,
         nargs="+",

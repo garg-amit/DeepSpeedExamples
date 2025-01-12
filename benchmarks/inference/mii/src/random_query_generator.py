@@ -6,12 +6,16 @@
 import numpy as np
 import torch
 import random
-
+import os
+import base64
+from io import BytesIO
+from PIL import Image
 
 class RandomQueryGenerator:
-    def __init__(self, input_text, tokenizer, seed):
+    def __init__(self, input_text, tokenizer, seed, image_dir=None):
         self.input_text = input_text
         self.tokenizer = tokenizer
+        self.image_dir = image_dir
 
         torch.manual_seed(seed)
         random.seed(seed)
@@ -31,5 +35,30 @@ class RandomQueryGenerator:
             req_prompt_length = min(int(np.random.normal(length, variance)), max_length)
 
             text = self.tokenizer.decode(text_ids[i : req_prompt_length + i])
-            request_text.append(text)
+
+            if self.image_dir:
+                images = os.listdir(self.image_dir)
+                if images:
+                    selected_image = random.choice(images)
+                    buffered = BytesIO()
+                    Image.open(os.path.join(self.image_dir, selected_image)).save(buffered, format="JPEG")
+                    # Encode the BytesIO object to base64
+                    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+                    messages = [{ "role": "user", "content": [
+                            {
+                                "type": "text",
+                                "text": text
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                            "url": f"data:image/jpeg;base64,{img_str}"
+                                        },
+                            },
+                        ],
+                    }]
+                    request_text.append(messages)
+            else:
+                request_text.append(text)
         return request_text

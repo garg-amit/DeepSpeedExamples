@@ -81,7 +81,8 @@ def get_summary(args, response_details):
 
     tokens_per_sec = mean(
         [
-            (len(get_tokenizer(args["model"]).tokenize(r.prompt)) +
+            (len(get_tokenizer(args["model"]).tokenize(r.prompt)) if type(r.prompt) == str 
+             else len(get_tokenizer(args["model"]).tokenize(r.prompt[0]["content"][0]["text"])) +
             len(get_tokenizer(args["model"]).tokenize(r.generated_tokens)) if type(r.generated_tokens) == str
             else len(r.generated_tokens))
             / (r.end_time - r.start_time)
