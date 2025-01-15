@@ -47,9 +47,22 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         args.load_format,
         "--max-model-len",
         str(args.max_model_len),
+        "--enable-lora",
+        "--max-lora-rank",
+        "512",
+        "--lora-extra-vocab-size",
+        "256",
+        "--limit-mm-per-prompt",
+        "audio=100",
+        "--max-loras",
+        "5",
+        "--lora-modules",
+        "speech=/home/azureuser/cloudfiles/code/Users/vadimma/src/Phi-4-Mini-MM/speech-lora",
+        "vision=/home/azureuser/cloudfiles/code/Users/vadimma/src/Phi-4-Mini-MM/vision-lora"
     )
     if args.extra_args and args.extra_args.strip() != "":
         vllm_cmd = vllm_cmd + tuple(args.extra_args.split(" "))
+    print(f'vllm_cmd={vllm_cmd}')
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True
     )
