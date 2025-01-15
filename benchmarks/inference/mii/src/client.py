@@ -198,7 +198,7 @@ def call_vllm_chat_completion(
         "max_tokens": max_new_tokens,
         "ignore_eos": True, #False,
         "stream": args.stream,
-        "model": args.model,
+        "model": "speech", #args.model,
     }
 
     def clear_line(n: int = 1) -> None:
@@ -466,7 +466,7 @@ def run_client(args):
         p.start()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42, image_dir=args.image_dir)
+    query_generator = RandomQueryGenerator(all_text, tokenizer, seed=42, image_dir=args.image_dir, audio_dir=args.audio_dir)
     request_text = query_generator.get_random_request_text(
         args.mean_prompt_length,
         args.mean_prompt_length * args.prompt_length_var,

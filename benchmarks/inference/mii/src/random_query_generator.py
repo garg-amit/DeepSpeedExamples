@@ -8,19 +8,29 @@ import torch
 import random
 import os
 import base64
+import soundfile
+import librosa
 from io import BytesIO
 from PIL import Image
 
 class RandomQueryGenerator:
-    def __init__(self, input_text, tokenizer, seed, image_dir=None):
+    def __init__(self, input_text, tokenizer, seed, image_dir=None, audio_dir=None):
         self.input_text = input_text
         self.tokenizer = tokenizer
         self.image_dir = image_dir
+        self.audio_dir = audio_dir
 
         torch.manual_seed(seed)
         random.seed(seed)
         np.random.seed(seed)
 
+    def encode_base64_content_from_local_file(self, file_path: str) -> str:
+        """Encode the content of a local file to base64 format."""
+        with open(file_path, "rb") as file:
+            file_content = file.read()
+            result = base64.b64encode(file_content).decode('utf-8')
+        return result
+        
     def get_random_request_text(self, length, variance, max_length, batch):
         request_text = []
         tokenized_input = self.tokenizer.batch_encode_plus(
@@ -57,6 +67,27 @@ class RandomQueryGenerator:
                                         },
                             },
                         ],
+                    }]
+                    request_text.append(messages)
+            elif self.audio_dir:
+                audios = os.listdir(self.audio_dir)
+                if audios:
+                    selected_audio = random.choice(audios)
+                    extension = os.path.splitext(selected_audio)[1].replace('.','')
+                    audio_str = self.encode_base64_content_from_local_file(os.path.join(self.audio_dir, selected_audio))
+                    text = f"Transcribe the spoken language in this audio file into a written document"
+                    messages = [{ "role": "user", "content": [
+                            {
+                                "type": "text",
+                                "text": text
+                            },
+                            {
+                                "type": "audio_url",
+                                "audio_url": {
+                                    "url": f"data:audio/{extension.lower()};base64,{audio_str}"
+                                },
+                            },
+                    ],
                     }]
                     request_text.append(messages)
             else:

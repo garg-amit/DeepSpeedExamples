@@ -9,9 +9,10 @@ OUT_DIR=./results_vllm
 LOAD_FORMAT=auto #dummy
 MAX_PROMPT_LEN=8192
 BACKEND=vllm_chat_completion #vllm #vllm_chat_completion
-USE_IMAGE=True
-USE_AUDIO=False
+USE_IMAGE=False
+USE_AUDIO=True
 IMAGE_DIR=/home/azureuser/cloudfiles/code/Users/gargamit/DeepSpeedExamples/benchmarks/inference/mii/data/vision-ds
+AUDIO_DIR=/home/azureuser/cloudfiles/code/Users/gargamit/DeepSpeedExamples/benchmarks/inference/mii/data/audio-ds
 MODEL_MAX_LEN=32000
 TP_SIZE=1
 MODEL_SERVER_EXTRA_ARGS=""
@@ -27,15 +28,15 @@ run_benchmark() {
     python ./run_benchmark.py --backend ${BACKEND} --model ${MODEL} --max_model_len ${MODEL_MAX_LEN} \
         --mean_prompt_length ${mean_prompt_length} --max_prompt_length ${MAX_PROMPT_LEN} \
         --mean_max_new_tokens ${mean_max_new_tokens} --tp_size ${TP_SIZE} --out_json_dir ${OUT_DIR} \
-        --load_format ${LOAD_FORMAT} --stream ${use_flag} --extra_args "${MODEL_SERVER_EXTRA_ARGS}"
+        --load_format ${LOAD_FORMAT} --stream ${use_flag} --extra_args "${MODEL_SERVER_EXTRA_ARGS}" --overwrite_results
 }
-
+f
 for MODEL in ${MODELS[@]}; do
     if [ "$USE_AUDIO" = True ]; then
-        run_benchmark 500 500 "--use_audio"
-        run_benchmark 1300 120 "--use_audio"
-        run_benchmark 2600 60 "--use_audio"
-        run_benchmark 4096 500 "--use_audio"
+        run_benchmark 500 500 "--use_audio --audio_dir ${AUDIO_DIR}"
+        run_benchmark 1300 120 "--use_audio --audio_dir ${AUDIO_DIR}"
+        run_benchmark 2600 60 "--use_audio --audio_dir ${AUDIO_DIR}"
+        run_benchmark 4096 500 "--use_audio --audio_dir ${AUDIO_DIR}"
     elif [ "$USE_IMAGE" = True ]; then
         run_benchmark 500 500 "--use_image --image_dir ${IMAGE_DIR}"
         run_benchmark 1300 120 "--use_image --image_dir ${IMAGE_DIR}"
