@@ -47,6 +47,18 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         args.load_format,
         "--max-model-len",
         str(args.max_model_len),
+        "--enable-lora",
+        "--max-lora-rank",
+        "512",
+        "--lora-extra-vocab-size",
+        "0",
+        "--limit-mm-per-prompt",
+        "audio=100",
+        "--max-loras",
+        "5",
+        "--lora-modules",
+        "speech=/home/azureuser/cloudfiles/code/Users/gargamit/models/phi4-omni-01092025/speech-lora-only-from-hf-unified-model",
+        "vision=/home/azureuser/cloudfiles/code/Users/gargamit/models/phi4-omni-01092025/vision-lora-only-from-hf-unified-model"
     )
     if args.extra_args and args.extra_args.strip() != "":
         vllm_cmd = vllm_cmd + tuple(args.extra_args.split(" "))

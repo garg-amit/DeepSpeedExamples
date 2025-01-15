@@ -198,7 +198,7 @@ def call_vllm_chat_completion(
         "max_tokens": max_new_tokens,
         "ignore_eos": True, #False,
         "stream": args.stream,
-        "model": args.model,
+        "model": "vision", #args.model,
     }
 
     def clear_line(n: int = 1) -> None:
