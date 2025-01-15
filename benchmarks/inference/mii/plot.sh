@@ -1,12 +1,10 @@
 RESULT_DIRS=(
-    <result-dir1>
-    <result-dir2>
-    # Add more result directories as needed
+    "/home/azureuser/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_vllm_chat_completion/"
+    # "/home/azureuser/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_text_vllm_chat_completion/"
 )
 MODEL_NAMES=(
-    <model-name1> 
-    <model-name2>
-    # Add corresponding model names
+    "_home_azureuser_cloudfiles_code_Users_vadimma_models_vllm_lora_MoE_weijian_phio-final-trial2-hf_hf-models_phio_-tp1-bs768-replicas1-prompt500-gen500"
+    # "_home_azureuser_cloudfiles_code_Users_vadimma_models_vllm_lora_MoE_weijian_phio-final-trial2-hf_hf-models_phio_-tp1-bs768-replicas1-prompt500-gen500"
 )
 
 OUT_DIR=./plots/
