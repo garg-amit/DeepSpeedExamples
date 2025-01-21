@@ -28,14 +28,19 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
-    max_model_len = 195104
+    max_model_len = 104208 # for new drop 195104 # for custom yocov2
 
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
     if "phi-3.5-mini" in args.model.lower():
         max_model_len = 30928
+    # ValueError: The model's max seq len (131072) is larger than the maximum number of tokens that can be stored in KV cache (118912). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
+    elif "llama-3.2-3b" in args.model.lower():
+        max_model_len = 118912
+
+    cmd = "/home/aiscuser/.local/bin/vllm" if "yoco" in args.model.lower() else "vllm"
 
     vllm_cmd = (
-        "/home/aiscuser/.local/bin/vllm",
+        cmd,
         "serve",
         args.model,
         "--host",
@@ -55,6 +60,9 @@ def start_vllm_server(args: argparse.Namespace) -> None:
 
     if args.enforce_eager:
         vllm_cmd += ("--enforce-eager",)
+
+    print(vllm_cmd)
+    # assert 0
 
     my_env = os.environ.copy()
     my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true"

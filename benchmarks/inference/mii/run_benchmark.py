@@ -37,10 +37,14 @@ def run_benchmark() -> None:
             #     client_args.num_clients = 1 # parallelism seems to cause an error when decoding streaming response
 
             print(f"\n****CLIENT_ARGS*** {server_args=} {client_args=}\n")
-            response_details = run_client(client_args)
-            print_summary(client_args, response_details)
-            save_json_results(client_args, response_details)
-
+            try:
+                response_details = run_client(client_args)
+                print_summary(client_args, response_details)
+                save_json_results(client_args, response_details)
+            # TypeError: TextEncodeInput must be Union[TextInputSequence, Tuple[InputSequence, InputSequence]]
+            except TypeError as e:
+                print(e)
+                continue
         if server_args.backend != "aml" and not server_args.client_only:
             stop_server(server_args)
 

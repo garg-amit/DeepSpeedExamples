@@ -115,7 +115,7 @@ def parse_args(
         "--num_clients",
         type=int,
         nargs="+",
-        default=[1, 2, 4, 8], #[1, 2, 4, 6, 8, 12, 16, 20, 24, 28, 32],
+        default=[1, 2, 4, 6, 8, 12, 16, 20, 24, 28, 32], # [1, 2, 4, 8], #
         help="Number of concurrent clients",
     )
     client_parser.add_argument(
