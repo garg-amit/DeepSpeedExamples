@@ -1,3 +1,7 @@
+results_*/
+plots_*/
+analysis_*/
+gcm-linux_amd64.*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
