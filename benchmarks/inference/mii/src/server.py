@@ -39,7 +39,11 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     elif "phi-4" in args.model.lower():
         max_model_len = 16384
 
-    cmd = "/home/aiscuser/.local/bin/vllm" if "yoco" in args.model.lower() else "vllm"
+    cmd = "vllm"
+    if "llama" in args.model.lower(): # covers "yoco/llama" file case
+        cmd = "vllm"
+    elif "yoco" in args.model.lower():
+        cmd = "/home/aiscuser/.local/bin/vllm"
 
     vllm_cmd = (
         cmd,
