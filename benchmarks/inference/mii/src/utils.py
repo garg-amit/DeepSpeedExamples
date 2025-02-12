@@ -90,6 +90,11 @@ def parse_args(
         action="store_true",
         help="Disable the cuda graph (slower but longer ctx and gen) or not",
     )
+    server_parser.add_argument(
+        "--use_editable",
+        action="store_true",
+        help="use the editable version",
+    )
 
 
     # Client args
@@ -115,7 +120,7 @@ def parse_args(
         "--num_clients",
         type=int,
         nargs="+",
-        default=[1, 2, 4, 6, 8, 12, 16, 20, 24, 28, 32], # [1, 2, 4, 8], #
+        default=[1, 2, 4], #[1, 2, 4, 6, 8, 12, 16, 20, 24, 28, 32], # [1, 2, 4, 8], #
         help="Number of concurrent clients",
     )
     client_parser.add_argument(

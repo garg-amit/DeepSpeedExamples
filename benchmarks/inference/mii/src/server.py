@@ -39,8 +39,14 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     elif "phi-4" in args.model.lower():
         max_model_len = 16384
 
+    # # disable chunk prefill
+    # if max_model_len > 32000:
+    #     max_model_len = 32000
+
     cmd = "vllm"
-    if "llama" in args.model.lower(): # covers "yoco/llama" file case
+    if args.use_editable:
+        cmd = "/home/aiscuser/.local/bin/vllm"
+    elif "llama" in args.model.lower(): # covers "yoco/llama" file case
         cmd = "vllm"
     elif "yoco" in args.model.lower():
         cmd = "/home/aiscuser/.local/bin/vllm"
