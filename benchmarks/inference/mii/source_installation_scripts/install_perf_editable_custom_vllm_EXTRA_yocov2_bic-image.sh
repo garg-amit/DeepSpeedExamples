@@ -1,14 +1,14 @@
 #!/bin/bash
 # source me!
 
-conda create -n myenvperfeditable1 python=3.10 -y
+conda create -n myenvperfeditableextra python=3.10 -y
 # If conda activate fails, then need to run this command 
-source activate myenvperfeditable1
-conda activate myenvperfeditable1
+source activate myenvperfeditableextra
+conda activate myenvperfeditableextra
 # verify that the correct env is used by
 conda env list
 
-cd /data/users/adatkins/dev/phivnext/yoco/yocov2/perf_vllm
+cd /data/users/adatkins/dev/phivnext/yoco/yocov2/perf_vllm_extra
 
 conda install -y ccache ipython
 export MAX_JOBS=8192 # set this to larger num to make build faster

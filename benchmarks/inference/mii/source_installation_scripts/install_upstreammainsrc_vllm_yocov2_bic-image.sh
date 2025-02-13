@@ -1,14 +1,14 @@
 #!/bin/bash
 # source me!
-conda create -n myenvcustom python=3.10 -y
+conda create -n myenvupstreammainsrc python=3.10 -y
 ## If conda activate fails, then need to run this command 
-source activate myenvcustom
-conda activate myenvcustom
+source activate myenvupstreammainsrc
+conda activate myenvupstreammainsrc
 ## verify that the correct env is used by
 conda env list
 
 # git clone & checkout https://github.com/microsoft/vllm/tree/congcongchen/yoco_v2 at commit 61494be7d7e4ec447369a2a82565c753565eb310
-cd /data/users/adatkins/dev/phivnext/yoco/yocov2/vllm
+cd /data/users/adatkins/dev/phivnext/yoco/yocov2/upstream_src_main_vllm
 
 conda install -y ccache
 export MAX_JOBS=8192 # set this to larger num to make build faster
@@ -20,7 +20,7 @@ export NVCC_THREADS=128
 pip install --user -e . -vvv # This may take 5-10 minutes.
 
 # for Amit's benchmark
-pip install matplotlib tabulate deepspeed-mii>=0.2.0 
+pip install matplotlib tabulate deepspeed-mii #>=0.2.0 
 
 # opt 2
 pip install uninstall flash-attn
