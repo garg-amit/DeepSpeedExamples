@@ -28,7 +28,7 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
-    max_model_len = 104208 # for new drop 195104 # for custom yocov2
+    max_model_len = 104208 #30000 #104208 # for new drop 195104 # for custom yocov2
 
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
     if "phi-3.5-mini" in args.model.lower():
@@ -36,8 +36,6 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (131072) is larger than the maximum number of tokens that can be stored in KV cache (118912). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
     elif "llama-3.2-3b" in args.model.lower():
         max_model_len = 118912
-    elif "phi-4" in args.model.lower():
-        max_model_len = 16384
     elif "phi4" in args.model.lower() or "phi-4" in args.model.lower():
         max_model_len = 131072
 
@@ -70,6 +68,8 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         str(args.tp_size),
         "--max-model-len",
         str(max_model_len), # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
+        #"--enable-chunked-prefill",
+        #"False"
     )
 
     if args.enforce_eager:

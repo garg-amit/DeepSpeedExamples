@@ -1,6 +1,6 @@
 #!/bin/bash
 # source me!
-# tested and running with vllm==0.7.0
+# tested and running with vllm==0.7.2 ??
 conda create -n myenvdefaultlatest python=3.10 -y
 source activate myenvdefaultlatest
 conda activate myenvdefaultlatest
@@ -9,6 +9,21 @@ conda install -y ccache
 export MAX_JOBS=8192 # set this to larger num to make build faster
 export NVCC_THREADS=128
 
-conda install -y pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+#conda install -y pytorch pytorch-cuda=11.8 torchvision torchaudio -c pytorch -c nvidia
+pip uninstall flash-attn
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-pip install -U --force-reinstall transformers flash-attn accelerate tokenizers deepspeed-mii>=0.2.0 vllm tabulate matplotlib
+pip uninstall flash-attn
+pip install flash-attn
+pip install transformers accelerate tokenizers tabulate matplotlib
+pip install vllm
+
+# pip install -U --force-reinstall transformers flash-attn accelerate tokenizers deepspeed-mii vllm tabulate matplotlib
+# pip install transformers flash-attn accelerate tokenizers deepspeed-mii vllm tabulate matplotlib
+
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install transformers accelerate tokenizers tabulate matplotlib
+cd upstream_src_main_vllm
+pip install -e . --user
+pip install flash-attn
