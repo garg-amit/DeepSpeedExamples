@@ -28,7 +28,8 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
-    max_model_len = 104208 #30000 #104208 # for new drop 195104 # for custom yocov2
+    max_model_len = 32000 #104208 #30000 #104208 # for new drop 195104 # for custom yocov2
+    # <= 32k is needed for the new rebased codebase
 
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
     if "phi-3.5-mini" in args.model.lower():
@@ -69,7 +70,9 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--max-model-len",
         str(max_model_len), # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
         #"--enable-chunked-prefill",
-        #"False"
+        #"False",
+        "--max-seq-len-to-capture",
+        str(max_model_len),
     )
 
     if args.enforce_eager:
@@ -79,8 +82,10 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     # assert 0
 
     my_env = os.environ.copy()
-    my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true"
+    my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true" # TODO need this?
     my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
+    if args.vllm_profile_dir:
+        my_env["VLLM_TORCH_PROFILER_DIR"] = args.vllm_profile_dir
 
     p = subprocess.Popen(
         vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env

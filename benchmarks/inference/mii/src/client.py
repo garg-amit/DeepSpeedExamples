@@ -133,6 +133,7 @@ def call_vllm(
             break
         except requests.exceptions.ChunkedEncodingError as e:
             retry_count += 1
+            print(e)
             print(f"caught and swallowed ChunkedEncodingError {retry_count=}")
 
     if retry_count == max_retries:
@@ -179,6 +180,7 @@ def call_openai(
         "max_tokens": max_new_tokens,
         "ignore_eos": False,
         "stream": args.stream,
+        "stop": [],
     }
 
     def clear_line(n: int = 1) -> None:

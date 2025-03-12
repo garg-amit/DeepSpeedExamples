@@ -95,6 +95,12 @@ def parse_args(
         action="store_true",
         help="use the editable version",
     )
+    server_parser.add_argument(
+        "--vllm_profile_dir",
+        type=str,
+        default="",
+        help="VLLM_TORCH_PROFILER_DIR"
+    )
 
 
     # Client args

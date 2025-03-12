@@ -20,7 +20,7 @@ export NVCC_THREADS=128
 pip install --user -e . -vvv # This may take 5-10 minutes.
 
 # for Amit's benchmark
-pip install matplotlib tabulate deepspeed-mii>=0.2.0 
+pip install matplotlib tabulate 
 
 # opt 2
 pip install uninstall flash-attn
