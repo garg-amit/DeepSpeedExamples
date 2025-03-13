@@ -47,7 +47,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     cmd = "vllm"
     if args.use_editable:
         cmd = "/home/aiscuser/.local/bin/vllm"
-    elif "llama" in args.model.lower(): # eventually when a PR is merged, 0.7.3 or "phi4" in args.model.lower() or "phi-4" in args.model.lower(): # covers "yoco/llama" file case
+    elif "llama" in args.model.lower() or "phi-4" in args.model.lower():
         cmd = "vllm"
     elif "yoco" in args.model.lower():
         cmd = "/home/aiscuser/.local/bin/vllm"
