@@ -3,6 +3,7 @@
 
 # make sure you download and activate conda (via miniconda) first
 # https://www.anaconda.com/docs/getting-started/miniconda/install#macos-linux-installation
+# wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 # then `source ~/.bashrc`
 conda create -n myenvlatestphyagi python=3.10 -y # TODO upgrade to python 310
 ## If conda activate fails, then need to run this command 
@@ -16,7 +17,7 @@ export MAX_JOBS=8192 # set this to larger num to make build faster
 export NVCC_THREADS=128
 
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install vllm # no flash-attn uninstalls stuff
+pip install vllm==0.7.3 # no flash-attn uninstalls stuff
 
 # for Amit's benchmark
 pip install matplotlib tabulate 
