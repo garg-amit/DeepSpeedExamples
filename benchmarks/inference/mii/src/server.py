@@ -28,7 +28,7 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
-    max_model_len = 32000 #104208 #30000 #104208 # for new drop 195104 # for custom yocov2
+    max_model_len = 104208 # 32000 #104208 #30000 #104208 # for new drop 195104 # for custom yocov2
     # <= 32k is needed for the new rebased codebase
 
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
@@ -73,6 +73,8 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         #"False",
         "--max-seq-len-to-capture",
         str(max_model_len),
+        "--enable-chunked-prefill",
+        "false"
     )
 
     if args.enforce_eager:

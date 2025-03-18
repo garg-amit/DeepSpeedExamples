@@ -6,7 +6,8 @@
 #OUT_DIR=./results_20250224_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture
 #OUT_DIR=./results_20250225_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_noda
 #OUT_DIR=./results_20250314_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_verylongseq2
-OUT_DIR=./results_20250317_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_verylongseq2
+#OUT_DIR=./results_20250317_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_verylongseq2
+OUT_DIR=./results_20250317_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_verylongseq2_maxlen104k_enableChunkPrefillFalse
 LOAD_FORMAT=dummy
 BACKEND="vllm"
 MODEL="/data/users/adatkins/dev/phivnext/yoco/yocov2/MoE/qyocov2/checkpoint/"
@@ -49,8 +50,8 @@ python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_le
 # very long both: 60/60 instead of 64/64 because averages/noise/truncation (?)
 python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_length 128000 --mean_prompt_length 60000 --mean_max_new_tokens 60000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream  --overwrite_results --port 26505 --parallel --cuda_visible_devices 5 --use_editable &
 
-# extremely long prompt
-python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_length 128000 --mean_prompt_length 120000 --mean_max_new_tokens 1000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream  --overwrite_results --port 26506 --parallel --cuda_visible_devices 6 --use_editable &
+# # extremely long prompt
+# python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_length 128000 --mean_prompt_length 120000 --mean_max_new_tokens 1000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream  --overwrite_results --port 26506 --parallel --cuda_visible_devices 6 --use_editable &
 
-# extremely long generation
-python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_length 128000 --mean_prompt_length 1000 --mean_max_new_tokens 120000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream  --overwrite_results --port 26507 --parallel --cuda_visible_devices 7 --use_editable &
+# # extremely long generation
+# python ./run_benchmark.py --backend ${BACKEND}  --model ${MODEL} --max_prompt_length 128000 --mean_prompt_length 1000 --mean_max_new_tokens 120000 --tp_size 1 --out_json_dir ${OUT_DIR} --load_format ${LOAD_FORMAT} --stream  --overwrite_results --port 26507 --parallel --cuda_visible_devices 7 --use_editable &

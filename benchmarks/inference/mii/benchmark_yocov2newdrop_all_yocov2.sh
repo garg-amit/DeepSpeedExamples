@@ -6,7 +6,10 @@
 #OUT_DIR=./results_20250224_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture
 #OUT_DIR=./results_20250225_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_noda
 #OUT_DIR=./results_20250314_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture
-OUT_DIR=./results_20250317_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture
+
+#OUT_DIR=./results_20250317_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture
+
+OUT_DIR=./results_20250318_benchmark_yocov2newdrop_yocov2_cuda124_maxseqlen_to_capture_maxlen104k_enableChunkPrefillFalse
 LOAD_FORMAT=dummy
 BACKEND="vllm"
 MODEL="/data/users/adatkins/dev/phivnext/yoco/yocov2/MoE/qyocov2/checkpoint/"
