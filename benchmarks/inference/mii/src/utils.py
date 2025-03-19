@@ -102,9 +102,9 @@ def parse_args(
         help="VLLM_TORCH_PROFILER_DIR"
     )
     server_parser.add_argument(
-        "--disable_chunked_prefill",
+        "--yocov2",
         action="store_true",
-        help="enable chunked prefill = False, and set maxlen to 32k",
+        help="do set things in yocov2 eg enable chunked prefill = False",
     )
 
 
