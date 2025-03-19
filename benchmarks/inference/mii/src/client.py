@@ -394,6 +394,7 @@ def run_client(args):
                 args.max_new_tokens_var * args.mean_max_new_tokens,
             )
         )
+        print(f"{len(t) > 0 =} {req_max_new_tokens=}")
         query_queue.put((t, req_max_new_tokens))
 
     # Tokenizers must be initialized after fork.
@@ -408,7 +409,7 @@ def run_client(args):
         res = result_queue.get()
         # vLLM returns concatinated tokens
         if "vllm" in args.backend:
-            # print(f"{res.generated_tokens=}")
+            print(f"CLIENT {res.generated_tokens=}")
             all_tokens = tokenizer.tokenize(res.generated_tokens)
             all_tokens = [item.decode(errors='ignore') if isinstance(item, bytes) else item for item in all_tokens]
             res.generated_tokens = all_tokens[len(tokenizer.tokenize(res.prompt)) :]

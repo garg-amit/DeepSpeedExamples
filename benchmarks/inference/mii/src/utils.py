@@ -101,6 +101,11 @@ def parse_args(
         default="",
         help="VLLM_TORCH_PROFILER_DIR"
     )
+    server_parser.add_argument(
+        "--disable_chunked_prefill",
+        action="store_true",
+        help="enable chunked prefill = False, and set maxlen to 32k",
+    )
 
 
     # Client args

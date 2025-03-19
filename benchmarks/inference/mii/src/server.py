@@ -28,7 +28,7 @@ def start_server(args: argparse.Namespace) -> None:
 
 def start_vllm_server(args: argparse.Namespace) -> None:
     # ValueError: The model's max seq len (200000) is larger than the maximum number of tokens that can be stored in KV cache (195104). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
-    max_model_len = 104208 # 32000 #104208 #30000 #104208 # for new drop 195104 # for custom yocov2
+    max_model_len = 104208 # default to custom yocov2
     # <= 32k is needed for the new rebased codebase
 
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`:
@@ -39,10 +39,8 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         max_model_len = 118912
     elif "phi4" in args.model.lower() or "phi-4" in args.model.lower():
         max_model_len = 131072
-
-    # # disable chunk prefill
-    # if max_model_len > 32000:
-    #     max_model_len = 32000
+    elif args.disable_chunked_prefill:
+        max_model_len = 32000
 
     cmd = "vllm"
     if args.use_editable:
@@ -69,13 +67,16 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         str(args.tp_size),
         "--max-model-len",
         str(max_model_len), # `--max-model-len` causes issues --- but may still be needed? 16384. Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
-        #"--enable-chunked-prefill",
-        #"False",
         "--max-seq-len-to-capture",
         str(max_model_len),
-        "--enable-chunked-prefill",
-        "false"
     )
+
+    if args.disable_chunked_prefill:
+        vllm_cmd += (
+            "--enable-chunked-prefill", # always needed with yocov2 else `"prefix caching not supported"`
+            "false"
+        )
+        print(f"--HERE! f{vllm_cmd=}--")
 
     if args.enforce_eager:
         vllm_cmd += ("--enforce-eager",)
@@ -89,25 +90,36 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     if args.vllm_profile_dir:
         my_env["VLLM_TORCH_PROFILER_DIR"] = args.vllm_profile_dir
 
-    p = subprocess.Popen(
-        vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
-    )
-    start_time = time.time()
-    timeout_after = 60 * 5  # 5 minutes
-    while True:
-        #line = "".join([l.decode("utf-8") for l in p.stderr.readlines()]) # causes a hang!!
-        line = p.stderr.readline().decode("utf-8")
-        if "Application startup complete" in line:
-            break
-        if "error" in line.lower():
-            p.terminate()
-            stop_vllm_server(args)
-            raise RuntimeError(f"Error starting VLLM server: {line}")
-        if time.time() - start_time > timeout_after:
-            p.terminate()
-            stop_vllm_server(args)
-            raise TimeoutError("Timed out waiting for VLLM server to start")
-        time.sleep(1)
+    print("START THE SERVER!")
+    time.sleep(30)
+    # comment out the below and start the server yourself to manually debug any weirdness
+    # important since we lose track of the process running the vllm server: we only track it starting the server
+
+    # p = subprocess.Popen(
+    #     vllm_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, close_fds=True, env=my_env
+    # )
+    # start_time = time.time()
+    # timeout_after = 60 * 5  # 5 minutes
+    # while True:
+    #     # line = ""
+    #     # for l in p.stderr.readlines(): 
+    #     #     print(f"SERVER ERR? {l.decode('utf-8')}")
+    #     # #line = "".join([l.decode("utf-8") for l in p.stderr.readlines()]) # causes a hang!!
+    #     # #print(f"SERVER ERR?: {line}")
+        
+    #     line = p.stderr.readline().decode("utf-8")
+    #     # print(f"SERVER ERR full?: {line}")
+    #     if "Application startup complete" in line:
+    #         break
+    #     if "error" in line.lower():
+    #         p.terminate()
+    #         stop_vllm_server(args)
+    #         raise RuntimeError(f"Error starting VLLM server: {line}")
+    #     if time.time() - start_time > timeout_after:
+    #         p.terminate()
+    #         stop_vllm_server(args)
+    #         raise TimeoutError("Timed out waiting for VLLM server to start")
+    #     time.sleep(1)
 
 
 def start_fastgen_server(args: argparse.Namespace) -> None:

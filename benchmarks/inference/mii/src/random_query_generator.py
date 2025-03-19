@@ -19,9 +19,13 @@ class RandomQueryGenerator:
 
     def get_random_request_text(self, length, variance, max_length, batch):
         request_text = []
-        tokenized_input = self.tokenizer.batch_encode_plus(
-            [self.input_text], return_tensors="pt", padding=False
-        )
+        try:
+            tokenized_input = self.tokenizer.batch_encode_plus(
+                [self.input_text], return_tensors="pt", padding=False
+            )
+        except Exception as e:
+            print("WTF 1")
+            raise e
         offset = list(range(512))
         random.shuffle(offset)
 
@@ -29,7 +33,10 @@ class RandomQueryGenerator:
         for i in range(batch):
             # Set max_new_tokens following normal distribution with mean=max_new_tokens and std=0.3*max_new_tokens
             req_prompt_length = min(int(np.random.normal(length, variance)), max_length)
-
-            text = self.tokenizer.decode(text_ids[i : req_prompt_length + i])
+            try:
+                text = self.tokenizer.decode(text_ids[i : req_prompt_length + i])
+            except Exception as e:
+                print("WTF 2")
+                raise e
             request_text.append(text)
         return request_text
