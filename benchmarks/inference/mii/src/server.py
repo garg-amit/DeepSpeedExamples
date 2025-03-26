@@ -40,7 +40,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     # yocov2: <= 32k is needed for the new rebased codebase so that prefix caching/chunk prefill isn't enabled
     # on CUDA capture: It turns out that vLLM disabled cuda_graph saliently without emitting any warnings when the sequence length is bigger than max-seq-len-to-capture.
     if args.yocov2:
-        max_model_len = 104208
+        max_model_len = 131072 #104208
     elif "phi-3.5-mini" in args.model.lower():
         max_model_len = 30928
     # ValueError: The model's max seq len (131072) is larger than the maximum number of tokens that can be stored in KV cache (118912). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
@@ -80,7 +80,8 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     if args.yocov2:
         vllm_cmd += (
             "--enable-chunked-prefill", # always needed with yocov2 else `"prefix caching not supported"`
-            "false"
+            "false",
+            "--no-enable-prefix-caching",
         )
 
     if args.enforce_eager:
