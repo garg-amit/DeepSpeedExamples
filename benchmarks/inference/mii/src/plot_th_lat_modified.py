@@ -88,6 +88,17 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
 def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # get the max
+    max_throughput = 0
+    for id, model in enumerate(models):
+        result_file_pattern = f"{model}-tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}-clients*.json"
+        
+        dir_path = [data_dir_path[id]] if data_dir_path else args.data_dirs
+        for idx, data_dir in enumerate(dir_path):
+            file_pattern = f"{data_dir}/{result_file_pattern}"
+            _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
+            max_throughput = max( max(throughputs), max_throughput)
+
     # color_cycle = plt.cm.get_cmap('tab10')
     color_cycle = matplotlib.colormaps['tab10']
     TTFTs = []
@@ -117,13 +128,14 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
             fit_kwargs["color"] = color_cycle(id % 10)
             plot_fit_line = True
 
-            polyfit_degree = 1
+            polyfit_degree = 1 # increase to increase the order of the polynomial. > 1 tends to overfit this data
             plot_fn = ax.scatter
 
             plot_config = glob.glob(f"{data_dir}/plot_config.yaml")
 
             latencies = sorted(latencies)
             throughputs = sorted(throughputs)
+            assert len(latencies) == len(throughputs)
 
             if plot_config:
                 plot_config = plot_config[0]
@@ -185,7 +197,14 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 if not "color" in fit_kwargs.keys():
                     fit_kwargs["color"] = plot_color
 
-                fit_x_list = np.arange(min(throughputs), max(throughputs), 0.01)
+                #step = (max(throughputs)-min(throughputs)) /  75 # len(throughputs)
+                step = max_throughput / 75 # ~75 points needed to produce a good line
+                fit_x_list = np.arange(min(throughputs), max_throughput, step)
+                #fit_x_list = np.arange(min(throughputs), max(throughputs), step)
+                # fit_x_list = np.arange(min(throughputs), max(throughputs), 0.01)
+
+                # print(f"{len(fit_x_list)=} {max(throughputs)-min(throughputs) =} {step=} {len(throughputs)=} ~~~~~~~~~~")
+
                 # import warnings
                 # warnings.filterwarnings('error')
                 # with warnings.catch_warnings(record=True) as w:
@@ -204,6 +223,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
+                # print(f"======== {np.array(fit_x_list)=} ========")
                 y = model_fn(fit_x_list) if plot_fit_line else latencies
                 ax.plot(
                     x,
