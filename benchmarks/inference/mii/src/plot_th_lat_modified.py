@@ -10,6 +10,7 @@ import re
 import yaml
 from pathlib import Path
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -54,7 +55,7 @@ def extract_values(file_pattern):
 
     return clients, throughputs, latencies, prof_args, ttfts, tbts
 
-def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'):
+def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/', colors=None):
     def plot_bars(ax, x, latencies, labels, title, color_map):
         bars = ax.bar(x, latencies, width, label=labels, color=color_map)
         ax.set_title(title)
@@ -68,8 +69,11 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
 
     x = np.arange(len(names))
     width = 1
-    colors = plt.cm.get_cmap('tab10', len(names))
-    color_map = colors(np.linspace(0, 1, len(names)))
+
+    if colors is None:
+        colors = matplotlib.colormaps['tab10']
+
+    color_map = colors(np.linspace(0, 1, len(names)*2))
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle(f'Prompt: {prompt}, Generation: {gen}')
@@ -84,7 +88,8 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
 def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    color_cycle = plt.cm.get_cmap('tab10')
+    # color_cycle = plt.cm.get_cmap('tab10')
+    color_cycle = matplotlib.colormaps['tab10']
     TTFTs = []
     TBTs = []
     for id, model in enumerate(models):
@@ -112,7 +117,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
             fit_kwargs["color"] = color_cycle(id % 10)
             plot_fit_line = True
 
-            polyfit_degree = 3
+            polyfit_degree = 1
             plot_fn = ax.scatter
 
             plot_config = glob.glob(f"{data_dir}/plot_config.yaml")
@@ -181,6 +186,21 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                     fit_kwargs["color"] = plot_color
 
                 fit_x_list = np.arange(min(throughputs), max(throughputs), 0.01)
+                # import warnings
+                # warnings.filterwarnings('error')
+                # with warnings.catch_warnings(record=True) as w:
+                #     while polyfit_degree > 0:
+                #         try:
+                #             data_model = np.polyfit(throughputs, latencies, polyfit_degree)
+                #             break
+                #         except np.RankWarning as e:
+                #             print(e)
+                #             print(f"~~ DECREMENT polyfit_degree ~~ {polyfit_degree=} => {polyfit_degree-1}")
+                #             polyfit_degree -= 1
+                # warnings.resetwarnings()
+                # if polyfit_degree == 0:
+                #     print("~~ ERROR polyfit_degree ~~")
+                #     plot_fit_line = False
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
@@ -206,11 +226,13 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     plt.savefig(out_file)
 
     # Plot TTFT and TBT
-    plot_latency_comparison(TTFTs, TBTs, model_names, prompt, gen, output_dir=out_dir)
+    plot_latency_comparison(TTFTs, TBTs, model_names, prompt, gen, output_dir=out_dir, colors=color_cycle)
 
 
 if __name__ == "__main__":
     args = get_args()
+    for data_dir in args.result_dirs:
+        print(f"{data_dir=} ")
     results = [get_result_sets(args, data_dir_path=[data_dir]) for data_dir in args.result_dirs]
     for idx, (_, tp_size, bs, replicas, prompt, gen) in enumerate(results[0]):
         output_charts(
