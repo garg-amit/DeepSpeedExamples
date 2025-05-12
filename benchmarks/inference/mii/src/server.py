@@ -37,7 +37,6 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     # to prevent `ValueError: The model's max seq len (100000) is larger than the maximum number of tokens that can be stored in KV cache (30928). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.`
 
     max_model_len = 32000
-    # yocov2: <= 32k is needed for the new rebased codebase so that prefix caching/chunk prefill isn't enabled
     # on CUDA capture: It turns out that vLLM disabled cuda_graph saliently without emitting any warnings when the sequence length is bigger than max-seq-len-to-capture.
     if args.yocov2:
         max_model_len = 131072 #104208
@@ -70,7 +69,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
         "--tensor-parallel-size",
         str(args.tp_size),
         "--max-model-len",
-        str(max_model_len), # TODO `--max-model-len` causes issues --- but may still be needed? Can override with env var VLLM_ALLOW_LONG_MAX_MODEL_LEN
+        str(max_model_len),
         "--max-seq-len-to-capture", # TODO does this cause issues with non-yoco models?
         str(max_model_len),
     )
