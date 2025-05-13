@@ -189,9 +189,12 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 if not "color" in fit_kwargs.keys():
                     fit_kwargs["color"] = plot_color
 
-                step = (max(throughputs)-min(throughputs)) /  75 # lots of steps needed to get good resolution. can't be fixed.
+                denom = 1000 if "phi" in model.lower() and str(gen) == "32000" else 75
+                step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
                 assert step > 0
                 fit_x_list = np.arange(min(throughputs), max(throughputs), step)
+                if "phi" in model.lower() and str(gen) == "32000":
+                    print(f"!!!!!!!!!!! {model=} {denom=} {prompt=} {gen=} {fit_x_list[990:]=}")
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
