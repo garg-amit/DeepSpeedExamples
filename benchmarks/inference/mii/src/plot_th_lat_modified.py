@@ -56,13 +56,17 @@ def extract_values(file_pattern):
     return clients, throughputs, latencies, prof_args, ttfts, tbts
 
 def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/', colors=None):
-    def plot_bars(ax, x, latencies, labels, title, color_map):
+    def plot_bars(ax, x, latencies, labels, title, color_map, prompt=prompt, gen=gen):
         bars = ax.bar(x, latencies, width, label=labels, color=color_map)
         ax.set_title(title)
         ax.set_ylabel('Latency (s)')
         ax.set_xticks(x)
         ax.set_xticklabels(range(len(labels)))
-        ax.legend()
+        if (str(prompt)=="2000" and str(gen) == "32000") or (str(prompt)=="32000" and str(gen) == "500"):
+            ax.legend(loc="lower left")
+            print(f"=== LOWER {prompt} {gen}")
+        else:
+            ax.legend()
         for bar in bars:
             yval = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 4), ha='center', va='bottom')
@@ -88,18 +92,6 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
 def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # get the max
-    max_throughput = 0
-    for id, model in enumerate(models):
-        result_file_pattern = f"{model}-tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}-clients*.json"
-        
-        dir_path = [data_dir_path[id]] if data_dir_path else args.data_dirs
-        for idx, data_dir in enumerate(dir_path):
-            file_pattern = f"{data_dir}/{result_file_pattern}"
-            _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
-            max_throughput = max( max(throughputs), max_throughput)
-
-    # color_cycle = plt.cm.get_cmap('tab10')
     color_cycle = matplotlib.colormaps['tab10']
     TTFTs = []
     TBTs = []
@@ -197,34 +189,13 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 if not "color" in fit_kwargs.keys():
                     fit_kwargs["color"] = plot_color
 
-                step = (max(throughputs)-min(throughputs)) /  75 # len(throughputs)
+                step = (max(throughputs)-min(throughputs)) /  75 # lots of steps needed to get good resolution. can't be fixed.
                 assert step > 0
-                #step = max_throughput / 75 # ~75 points needed to produce a good line
-                #fit_x_list = np.arange(min(throughputs), max_throughput, step)
                 fit_x_list = np.arange(min(throughputs), max(throughputs), step)
-                # fit_x_list = np.arange(min(throughputs), max(throughputs), 0.01)
-
-                # print(f"{len(fit_x_list)=} {max(throughputs)-min(throughputs) =} {step=} {len(throughputs)=} ~~~~~~~~~~")
-
-                # import warnings
-                # warnings.filterwarnings('error')
-                # with warnings.catch_warnings(record=True) as w:
-                #     while polyfit_degree > 0:
-                #         try:
-                #             data_model = np.polyfit(throughputs, latencies, polyfit_degree)
-                #             break
-                #         except np.RankWarning as e:
-                #             print(e)
-                #             print(f"~~ DECREMENT polyfit_degree ~~ {polyfit_degree=} => {polyfit_degree-1}")
-                #             polyfit_degree -= 1
-                # warnings.resetwarnings()
-                # if polyfit_degree == 0:
-                #     print("~~ ERROR polyfit_degree ~~")
-                #     plot_fit_line = False
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
-                print(f"======== {np.array(fit_x_list)=} ========")
+
                 y = model_fn(fit_x_list) if plot_fit_line else latencies
                 ax.plot(
                     x,
@@ -236,7 +207,10 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     plt.title(f"Prompt: {prompt}, Generation: {gen}, TP: {tp_size}")
     plt.xlabel("Throughput (queries/s)", fontsize=14)
     plt.ylabel("Latency (s)", fontsize=14)
-    plt.legend(loc="upper left")
+    if str(gen) == "32000":
+        plt.legend(loc="upper right")
+    else:
+        plt.legend(loc="upper left")
     plt.grid(True)
     plt.tight_layout()
     out_file = (
