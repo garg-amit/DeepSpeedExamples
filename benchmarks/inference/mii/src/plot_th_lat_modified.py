@@ -189,12 +189,21 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 if not "color" in fit_kwargs.keys():
                     fit_kwargs["color"] = plot_color
 
-                denom = 1000 if "phi" in model.lower() and str(gen) == "32000" else 75
-                step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
-                assert step > 0
-                fit_x_list = np.arange(min(throughputs), max(throughputs), step)
-                if "phi" in model.lower() and str(gen) == "32000":
-                    print(f"!!!!!!!!!!! {model=} {denom=} {prompt=} {gen=} {fit_x_list[990:]=}")
+                print(f"~~~ {model=} {file_pattern=}")
+                if "phi4mini" in file_pattern and str(gen) == "32000":
+                    denom = 1000
+                    step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
+                    assert step > 0
+                    # 10 overstep helped! 25 too much
+                    fit_x_list = np.arange(min(throughputs), max(throughputs)+20*step, step)
+                    print(f"!!!!!!!!!!! {model=} {file_pattern=} {denom=} {prompt=} {gen=} {fit_x_list[-10:]=}")
+                else:
+
+                    denom = 75
+                    step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
+                    assert step > 0
+                    fit_x_list = np.arange(min(throughputs), max(throughputs), step)
+                    
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
