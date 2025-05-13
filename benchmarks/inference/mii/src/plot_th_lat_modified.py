@@ -128,7 +128,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
             fit_kwargs["color"] = color_cycle(id % 10)
             plot_fit_line = True
 
-            polyfit_degree = 1 # increase to increase the order of the polynomial. > 1 tends to overfit this data
+            polyfit_degree = 3 # increase to increase the order of the polynomial. > 1 tends to overfit this data
             plot_fn = ax.scatter
 
             plot_config = glob.glob(f"{data_dir}/plot_config.yaml")
@@ -197,10 +197,11 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 if not "color" in fit_kwargs.keys():
                     fit_kwargs["color"] = plot_color
 
-                #step = (max(throughputs)-min(throughputs)) /  75 # len(throughputs)
-                step = max_throughput / 75 # ~75 points needed to produce a good line
-                fit_x_list = np.arange(min(throughputs), max_throughput, step)
-                #fit_x_list = np.arange(min(throughputs), max(throughputs), step)
+                step = (max(throughputs)-min(throughputs)) /  75 # len(throughputs)
+                assert step > 0
+                #step = max_throughput / 75 # ~75 points needed to produce a good line
+                #fit_x_list = np.arange(min(throughputs), max_throughput, step)
+                fit_x_list = np.arange(min(throughputs), max(throughputs), step)
                 # fit_x_list = np.arange(min(throughputs), max(throughputs), 0.01)
 
                 # print(f"{len(fit_x_list)=} {max(throughputs)-min(throughputs) =} {step=} {len(throughputs)=} ~~~~~~~~~~")
@@ -223,7 +224,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
-                # print(f"======== {np.array(fit_x_list)=} ========")
+                print(f"======== {np.array(fit_x_list)=} ========")
                 y = model_fn(fit_x_list) if plot_fit_line else latencies
                 ax.plot(
                     x,
