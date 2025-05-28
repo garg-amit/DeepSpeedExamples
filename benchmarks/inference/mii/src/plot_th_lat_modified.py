@@ -86,7 +86,7 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
     plot_bars(axs[1], x + width/2, TBTs, names, 'Time Between Tokens (TBT)', color_map)
 
     plt.tight_layout()
-    plt.savefig(f'{output_dir}/ttft_tbt-prompt{prompt}-gen{gen}.png')
+    plt.savefig(f'{output_dir}/ttft_tbt-prompt{prompt}-gen{gen}.svg')
     plt.show()
 
 def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
@@ -227,7 +227,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     plt.tight_layout()
     out_file = (
         out_dir
-        / f"tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}.png"
+        / f"tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}.svg"
     )
     print(f"Saving {out_file}")
     plt.savefig(out_file)
