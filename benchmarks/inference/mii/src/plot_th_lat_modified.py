@@ -75,9 +75,9 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
     width = 1
 
     if colors is None:
-        colors = matplotlib.colormaps['tab10']
+        colors = matplotlib.colormaps['tab10'] #tab20 works too
 
-    color_map = colors(np.linspace(0, 1, len(names)*2))
+    color_map = colors(np.linspace(0, 1, len(names)*2 - 2))
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle(f'Prompt: {prompt}, Generation: {gen}')
