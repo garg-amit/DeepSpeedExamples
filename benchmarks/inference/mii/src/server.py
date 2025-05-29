@@ -38,15 +38,15 @@ def start_vllm_server(args: argparse.Namespace) -> None:
 
     max_model_len = 32000
     # on CUDA capture: It turns out that vLLM disabled cuda_graph saliently without emitting any warnings when the sequence length is bigger than max-seq-len-to-capture.
-    if args.yocov2:
-        max_model_len = 131072 #104208
-    elif "phi-3.5-mini" in args.model.lower():
+    if "phi-3.5-mini" in args.model.lower():
         max_model_len = 30928
     # ValueError: The model's max seq len (131072) is larger than the maximum number of tokens that can be stored in KV cache (118912). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine.
     elif "llama-3.2-3b" in args.model.lower():
         max_model_len = 118912
     elif "phi4" in args.model.lower() or "phi-4" in args.model.lower():
-        max_model_len = 131072
+        max_model_len = 104208 #131072
+    elif args.yocov2:
+        max_model_len = 131072 #104208
 
     # executable ---------------
     cmd = "vllm"

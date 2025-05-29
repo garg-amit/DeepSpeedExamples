@@ -1,9 +1,9 @@
 #!/bin/bash
 # source me!
-conda create -n myenveditablefreshphyagi python=3.10 -y
+conda create -n myenveditablefreshphyagipy312 python=3.12 -y
 ## If conda activate fails, then need to run this command 
-source activate myenveditablefreshphyagi
-conda activate myenveditablefreshphyagi
+source activate myenveditablefreshphyagipy312
+conda activate myenveditablefreshphyagipy312
 ## verify that the correct env is used by
 conda env list
 
