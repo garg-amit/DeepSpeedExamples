@@ -9,7 +9,7 @@ import os
 import re
 import yaml
 from pathlib import Path
-
+import re
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -33,7 +33,7 @@ def get_args():
 def extract_values(file_pattern):
     print(f"Extracting values from {file_pattern}")
     files = glob.glob(file_pattern)
-
+    print(files)
     print(f"Found {len(files)}")
     print("\n".join(files))
 
@@ -52,12 +52,17 @@ def extract_values(file_pattern):
         latencies.append(summary.latency)
         ttfts.append(summary.first_token_latency)
         tbts.append(summary.token_gen_latency)
-
+    
+    combined = list(zip(clients, throughputs, latencies, prof_args, ttfts, tbts))
+    sorted_combined = sorted(combined, key=lambda x: x[0])
+    clients, throughputs, latencies, prof_args, ttfts, tbts = zip(*sorted_combined)
+    print(f'Clients = {clients}')
     return clients, throughputs, latencies, prof_args, ttfts, tbts
 
-def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'):
-    def plot_bars(ax, x, latencies, labels, title, color_map):
-        bars = ax.bar(x, latencies, width, label=labels, color=color_map)
+def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, clients, output_dir='plots/'):
+    def plot_bars(ax, x, latencies, labels, title, clients, color_map):
+        print(f'x = {len(clients)}, latencies={len(latencies)}, width={width}, color_map={len(color_map)}')
+        bars = ax.bar(range(len(clients)), latencies, width, label=[f"Clients={c}" for c in clients], color=color_map)
         ax.set_title(title)
         ax.set_ylabel('Latency (s)')
         ax.set_xticks(x)
@@ -69,14 +74,14 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
 
     x = np.arange(len(names))
     width = 1
-    colors = plt.cm.get_cmap('tab10', len(names))
-    color_map = colors(np.linspace(0, 1, len(names)))
+    colors = plt.cm.get_cmap('hsv', len(clients))
+    color_map = colors(np.linspace(0, 1, len(clients)))
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle(f'Prompt: {prompt}, Generation: {gen}')
 
-    plot_bars(axs[0], x - width/2, TTFTs, names, 'Time to First Token (TTFT)', color_map)
-    plot_bars(axs[1], x + width/2, TBTs, names, 'Time Between Tokens (TBT)', color_map)
+    plot_bars(axs[0], x - width/2, TTFTs, names, 'Time to First Token (TTFT)', clients, color_map)
+    plot_bars(axs[1], x + width/2, TBTs, names, 'Time Between Tokens (TBT)', clients, color_map)
 
     plt.tight_layout()
     plt.savefig(f'{output_dir}/ttft_tbt-prompt{prompt}-gen{gen}.png')
@@ -97,7 +102,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
         dir_path = [data_dir_path[id]] if data_dir_path else args.data_dirs
         for idx, data_dir in enumerate(dir_path):
             file_pattern = f"{data_dir}/{result_file_pattern}"
-            _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
+            clients, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
 
             if ttfts is None or len(ttfts) == 0:
                 print(f"Skipping {model} due to missing values")
@@ -105,8 +110,10 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
 
             models_with_data.append(model_names[id])
             # Consider only TTFTs and TBTS when num of clients is 1 i.e. at index 0
-            TTFTs.append(ttfts[0])
-            TBTs.append(tbts[0])
+            # TTFTs.append(ttfts[0])
+            # TBTs.append(TBTs[0])
+            TTFTs = ttfts
+            TBTs = tbts
 
             kwargs = {}
             kwargs["label"] = str(data_dir)
@@ -213,7 +220,8 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     plt.savefig(out_file)
 
     # Plot TTFT and TBT
-    plot_latency_comparison(TTFTs, TBTs, models_with_data, prompt, gen, output_dir=out_dir)
+    print(f'models_with_data={models_with_data}')
+    plot_latency_comparison(TTFTs, TBTs, models_with_data, prompt, gen, clients=clients, output_dir=out_dir)
 
 
 if __name__ == "__main__":

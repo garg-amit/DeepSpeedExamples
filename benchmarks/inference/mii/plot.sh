@@ -1,9 +1,9 @@
 RESULT_DIRS=(
-    "/home/azureuser/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_vllm_chat_completion/"
-    # "/home/azureuser/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_text_vllm_chat_completion/"
+    "/home/azureuser/cloudfiles/code/Users/vadimma/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_vllm_chat_completion/"
+    # "/home/azureuser/cloudfiles/code/Users/vadimma/src/DeepSpeedExamples/benchmarks/inference/mii/results_vllm_text_vllm_chat_completion/"
 )
 MODEL_NAMES=(
-    "_home_azureuser_cloudfiles_code_Users_vadimma_models_vllm_lora_MoE_weijian_phio-final-trial2-hf_hf-models_phio_-tp1-bs768-replicas1-prompt500-gen500"
+    "home_azureuser_cloudfiles_code_Users_vadimma_src_Phi-4-Mini-MM"
     # "_home_azureuser_cloudfiles_code_Users_vadimma_models_vllm_lora_MoE_weijian_phio-final-trial2-hf_hf-models_phio_-tp1-bs768-replicas1-prompt500-gen500"
 )
 
