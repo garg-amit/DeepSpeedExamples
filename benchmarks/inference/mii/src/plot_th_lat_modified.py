@@ -62,11 +62,12 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
         ax.set_ylabel('Latency (s)')
         ax.set_xticks(x)
         ax.set_xticklabels(range(len(labels)))
-        if (str(prompt)=="2000" and str(gen) == "32000") or (str(prompt)=="32000" and str(gen) == "500"):
-            ax.legend(loc="lower left")
-            print(f"=== LOWER {prompt} {gen}")
-        else:
-            ax.legend()
+        ax.legend(loc="upper right")
+        # if (str(prompt)=="2000" and str(gen) == "32000") or (str(prompt)=="32000" and str(gen) == "500"):
+        #     ax.legend(loc="lower left")
+        #     print(f"=== LOWER {prompt} {gen}")
+        # else:
+        #     ax.legend()
         for bar in bars:
             yval = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 4), ha='center', va='bottom')
@@ -77,7 +78,7 @@ def plot_latency_comparison(TTFTs, TBTs, names, prompt, gen, output_dir='plots/'
     if colors is None:
         colors = matplotlib.colormaps['tab10'] #tab20 works too
 
-    color_map = colors(np.linspace(0, 1, len(names)*2 - 2))
+    color_map = colors(np.linspace(0, 1, len(names)*2 - 3)) # for 7 plots in TTFT TBT bar charts
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle(f'Prompt: {prompt}, Generation: {gen}')
