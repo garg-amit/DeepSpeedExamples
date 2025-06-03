@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
         # plot line of best fit
         fit_kwargs["color"] = color_cycle(i % 10)
-        polyfit_degree = 3
+        polyfit_degree = 2 if "flash" in label.lower() else 3
         data_model = np.polyfit(completion_lengths_buckets, latencies, polyfit_degree)
         model_fn = np.poly1d(data_model)
 

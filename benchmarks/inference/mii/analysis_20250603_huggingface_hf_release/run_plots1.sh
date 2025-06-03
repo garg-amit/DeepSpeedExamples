@@ -2,13 +2,12 @@ DDD="/data/users/adatkins/dev/phivnext/yoco/yocov2/DeepSpeedExamples/benchmarks/
 RESULT_DIRS=(
     "${DDD}/_data/phi4mini"
     "${DDD}/_data/yocov2"
-    "${DDD}/_data/qwen25_7B"
-    
+    #"${DDD}/_data/qwen25_7B"
 )
 MODEL_NAMES=(
     Phi4-mini
     Phi4-mini-Flash
-    Qwen2.5-7B
+    #Qwen2.5-7B
 )
 
 OUT_DIR="${DDD}/plots1"
