@@ -76,10 +76,11 @@ def extract_values(file_pattern):
         # total_latency_per_response_s = [sum(l) - r.token_gen_time[0] \
         #                                 for r, l in zip(response_details, lats)]
 
-
         lats_per_request = [r.end_time - r.start_time - r.token_gen_time[0] for r in response_details] # This is off because end_time=time.time(),
-        p95 = np.percentile(lats_per_request, 95)
-        total_latency_per_response_s = [l for l in lats_per_request if l <= p95]
+        normed_lats_per_request = [(r.end_time - r.start_time - r.token_gen_time[0]) / (len(r.token_gen_time) -1) for r in response_details]
+        p95 = np.percentile(normed_lats_per_request, 95)
+        mask = [True if l <= p95 else False for l in normed_lats_per_request]
+        total_latency_per_response_s = [l for l, m in zip(lats_per_request, mask) if m]
 
         adjusted_qps_per_response_s = [t / prof_args["num_clients"] for t in total_latency_per_response_s] # TODO this isn't throughput...
         throughputs.append(adjusted_qps_per_response_s)
@@ -153,7 +154,7 @@ if __name__ == "__main__":
     for m, d in all_processed_data.items():
         for c, d2 in d.items():
             for g, l in d2.items():
-                # if c > 1:
+                # if c > 4:
                 #     continue
                 # print(f"model={m};clients={c};completionlen={g};latency={l}")
                 row = dict(
@@ -186,5 +187,5 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_p95_oftotalresponses.svg")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_p95_of_responses.svg")
     #df.to_json(f"{args.out_dir}/plot_data.json")
