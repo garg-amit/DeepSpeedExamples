@@ -43,6 +43,8 @@ def extract_values(file_pattern):
     throughputs = []
     latencies = []
 
+    total_latencies_by_model = defaultdict(list)
+
     for f in files:
         prof_args, response_details = read_json(f)
         # response_details = List[ResponseDetails] ie a list of the response objects of list of requesuts
@@ -58,9 +60,23 @@ def extract_values(file_pattern):
 
         # per response metrics
         # omit first token since would be TTFT
-        # these two are basically equivalent
-        total_latency_per_response_s = [sum(r.token_gen_time) - r.token_gen_time[0] for r in response_details]
-        total_latency_per_response_s1 = [r.end_time - r.start_time - r.token_gen_time[0] for r in response_details] # This is off because end_time=time.time(),
+        # total_latency_per_response_s = [sum(r.token_gen_time) - r.token_gen_time[0] for r in response_details]
+        # total_latency_per_response_s1 = [r.end_time - r.start_time - r.token_gen_time[0] for r in response_details] # This is off because end_time=time.time(),
+
+        # take p95 of generation
+        # right now: for each (model, genlen, numclients) we take latencies across all requests
+        # TODO ideally we want to be p95 to be: for each model we take latencies across all (requests, genlen, numclients)
+        # in practice though it likely doesn't matter since shrinking the num_clients matters less
+
+        p95 = np.percentile([l for r in response_details for l in r.token_gen_time[1:]], 95)
+        lats = []
+        for r in response_details:
+            p95_lats = [l for i, l in enumerate(r.token_gen_time) if i > 0 and l <= p95]
+            lats.append(p95_lats)
+
+        total_latency_per_response_s = [sum(l) - r.token_gen_time[0] \
+                                        for r, l in zip(response_details, lats)]
+
         adjusted_qps_per_response_s = [t / prof_args["num_clients"] for t in total_latency_per_response_s] # TODO this isn't throughput...
         throughputs.append(adjusted_qps_per_response_s)
         latencies.append(total_latency_per_response_s)
@@ -85,12 +101,9 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
         dir_path = [data_dir_path[_id]]
         for idx, data_dir in enumerate(dir_path):
             file_pattern = f"{data_dir}/{result_file_pattern}"
-            print(f"{file_pattern=}")
             suffix = file_pattern.split('/')[-1]
             prompt_len_bucket = int(re.search("prompt(\d+)", suffix).group(1))
             completion_len_bucket = int(re.search("gen(\d+)", suffix).group(1))
-            # if prompt_len_bucket != 2000:
-            #     continue
             clients, throughputs, latencies = extract_values(file_pattern)
             assert completion_len_bucket == int(gen)
             # use all clients
@@ -104,53 +117,6 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
     # print(f"{gen=}")
     # ipdb.set_trace()
     return all_data_total_request_latency_by_model_by_completion_len
-
-
-# def extract_values(file_pattern):
-#     print(f"Extracting values from {file_pattern}")
-#     files = glob.glob(file_pattern)
-
-#     print(f"Found {len(files)}")
-#     print("\n".join(files))
-
-#     clients = []
-#     throughputs = []
-#     latencies = []
-#     ttfts = []
-#     tbts = []
-#     extra_args = {}
-#     for f in files:
-#         prof_args, response_details = read_json(f)
-#         summary = get_summary(prof_args, response_details)
-#         ipdb.set_trace()
-#         clients.append(prof_args["num_clients"])
-#         throughputs.append(summary.throughput)
-#         latencies.append(summary.latency)
-#         ttfts.append(summary.first_token_latency)
-#         tbts.append(summary.token_gen_latency)
-
-#     return clients, throughputs, latencies, prof_args, ttfts, tbts
-
-
-# def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, data_dir_path=None, model_names=None):
-#     out_dir.mkdir(parents=True, exist_ok=True)
-
-#     color_cycle = matplotlib.colormaps['tab10']
-#     TTFTs = []
-#     TBTs = []
-#     for id, model in enumerate(models):
-#         result_file_pattern = f"{model}-tp{tp_size}-bs{bs}-replicas{replicas}-prompt{prompt}-gen{gen}-clients*.json"
-        
-#         dir_path = [data_dir_path[id]] if data_dir_path else args.data_dirs
-#         for idx, data_dir in enumerate(dir_path):
-#             file_pattern = f"{data_dir}/{result_file_pattern}"
-#             _, throughputs, latencies, _, ttfts, tbts = extract_values(file_pattern)
-
-#             # Consider only TTFTs and TBTS when num of clients is 1 i.e. at index 0
-#             TTFTs.append(ttfts[0])
-#             TBTs.append(tbts[0])
-
-#     ipdb.set_trace()
 
 if __name__ == "__main__":
     args = get_args()
@@ -183,7 +149,9 @@ if __name__ == "__main__":
     for m, d in all_processed_data.items():
         for c, d2 in d.items():
             for g, l in d2.items():
-                print(f"model={m};clients={c};completionlen={g};latency={l}")
+                # if c > 1:
+                #     continue
+                # print(f"model={m};clients={c};completionlen={g};latency={l}")
                 row = dict(
                     model=m,
                     num_clients=c,
@@ -214,4 +182,5 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot.svg")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_p95.svg")
+    #df.to_json(f"{args.out_dir}/plot_data.json")
