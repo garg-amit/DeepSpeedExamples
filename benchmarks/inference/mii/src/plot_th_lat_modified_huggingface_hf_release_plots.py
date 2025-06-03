@@ -169,9 +169,19 @@ if __name__ == "__main__":
     plt.clf()
 
     completion_lengths_buckets = np.array(sorted(list(set(df.completion_length_bucket))))
-
     latencies_by_model = defaultdict(list)
-    for model in set(df.model):
+
+    fig, ax = plt.subplots()
+
+    color_cycle = matplotlib.colormaps['tab10']
+    fit_kwargs = {}
+    fit_kwargs["linestyle"] = "--"
+
+    kwargs = {}
+    kwargs["marker"] = "o"
+    kwargs["linestyle"] = "--"
+
+    for i, model in enumerate(sorted(list(set(df.model)))):
         latencies = []
         for completion_length_bucket in sorted(list(set(df.completion_length_bucket))):
             rs = df[(df["model"]==model) & (df["completion_length_bucket"] == completion_length_bucket)]
@@ -181,14 +191,59 @@ if __name__ == "__main__":
 
         label = os.path.dirname(model)
         if "yocov2" in label.lower():
-            label = "Phi4-mini-flash"
+            label = "Phi4-mini-Flash"
+        elif "phi4" in label.lower():
+            label = "Phi4-mini"
+        elif "qwen" in label.lower():
+            label = "Qwen2.5-7B"
 
-        plt.plot(completion_lengths_buckets, latencies, '-', label=label)
+        # plot scatter plot
 
-    plt.xlabel("generation length (tokens)")
-    plt.ylabel("total generation latency (s)")
+        kwargs["label"] = label
+        kwargs["color"] = color_cycle(i % 10)
+        plot_fn = ax.scatter
+
+        plot = plot_fn(
+            completion_lengths_buckets,
+            latencies,
+            **kwargs,
+        )
+
+        if plot_fn == ax.plot:
+            plot_color = plot[0].get_color()
+        else:
+            plot_color = plot.get_facecolor()[0]
+        if not "color" in fit_kwargs.keys():
+            fit_kwargs["color"] = plot_color
+
+
+        # plot line of best fit
+        fit_kwargs["color"] = color_cycle(i % 10)
+        polyfit_degree = 3
+        data_model = np.polyfit(completion_lengths_buckets, latencies, polyfit_degree)
+        model_fn = np.poly1d(data_model)
+
+        if not "color" in fit_kwargs.keys():
+            fit_kwargs["color"] = plot_color
+
+        denom = 10
+        step = (max(completion_lengths_buckets)-min(completion_lengths_buckets)) /  denom 
+        fit_x_list = np.arange(min(completion_lengths_buckets), max(completion_lengths_buckets)+1, step)
+        x = fit_x_list
+        y = model_fn(fit_x_list)
+        print(f"{fit_x_list=}")
+        ax.plot(
+            x,
+            y,
+            alpha=0.5,
+            **fit_kwargs,
+        )
+
+    plt.xlabel("Generation Length (tokens)")
+    plt.ylabel("Latency (s) of Whole Generation")
     plt.legend(loc="upper left")
+    plt.title("Generation Latencies for Prompt: 2000, TP: 1")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot.svg")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_scatterfit.svg")
     #df.to_json(f"{args.out_dir}/plot_data.json")
