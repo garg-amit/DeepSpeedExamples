@@ -67,15 +67,19 @@ def extract_values(file_pattern):
         # right now: for each (model, genlen, numclients) we take latencies across all requests
         # TODO ideally we want to be p95 to be: for each model we take latencies across all (requests, genlen, numclients)
         # in practice though it likely doesn't matter since shrinking the num_clients matters less
+        # p95 = np.percentile([l for r in response_details for l in r.token_gen_time[1:]], 95)
+        # lats = []
+        # for r in response_details:
+        #     p95_lats = [l for i, l in enumerate(r.token_gen_time) if i > 0 and l <= p95]
+        #     lats.append(p95_lats)
 
-        p95 = np.percentile([l for r in response_details for l in r.token_gen_time[1:]], 95)
-        lats = []
-        for r in response_details:
-            p95_lats = [l for i, l in enumerate(r.token_gen_time) if i > 0 and l <= p95]
-            lats.append(p95_lats)
+        # total_latency_per_response_s = [sum(l) - r.token_gen_time[0] \
+        #                                 for r, l in zip(response_details, lats)]
 
-        total_latency_per_response_s = [sum(l) - r.token_gen_time[0] \
-                                        for r, l in zip(response_details, lats)]
+
+        lats_per_request = [r.end_time - r.start_time - r.token_gen_time[0] for r in response_details] # This is off because end_time=time.time(),
+        p95 = np.percentile(lats_per_request, 95)
+        total_latency_per_response_s = [l for l in lats_per_request if l <= p95]
 
         adjusted_qps_per_response_s = [t / prof_args["num_clients"] for t in total_latency_per_response_s] # TODO this isn't throughput...
         throughputs.append(adjusted_qps_per_response_s)
@@ -182,5 +186,5 @@ if __name__ == "__main__":
     plt.legend(loc="upper left")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_p95.svg")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_p95_oftotalresponses.svg")
     #df.to_json(f"{args.out_dir}/plot_data.json")
