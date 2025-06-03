@@ -71,14 +71,12 @@ def read_json(file_path):
 
     return args, response_details
 
-
 def get_summary(args, response_details):
     num_clients = args["num_clients"]
 
     # Calculate latency and throughput using P95 latency
     latency = mean([r.end_time - r.start_time for r in response_details])
     throughput = num_clients / latency
-
     tokens_per_sec = mean(
         [
             (len(get_tokenizer(args["model"]).tokenize(r.prompt)) +

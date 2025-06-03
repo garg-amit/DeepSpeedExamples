@@ -177,8 +177,41 @@ if __name__ == "__main__":
                     for g, l in d2.items():
                        all_processed_data[m][c][g] = l #processed_data[m][c][g]
 
+    # Actually plot
+
+    rows = []
     for m, d in all_processed_data.items():
         for c, d2 in d.items():
             for g, l in d2.items():
                 print(f"model={m};clients={c};completionlen={g};latency={l}")
-    ipdb.set_trace()
+                row = dict(
+                    model=m,
+                    num_clients=c,
+                    completion_length_bucket=g,
+                    generation_latency_s=l,
+                )
+                rows.append(row)
+
+    import pandas as pd
+    df = pd.DataFrame.from_dict(rows)
+    plt.clf()
+
+    completion_lengths_buckets = np.array(sorted(list(set(df.completion_length_bucket))))
+
+    latencies_by_model = defaultdict(list)
+    for model in set(df.model):
+        latencies = []
+        for completion_length_bucket in sorted(list(set(df.completion_length_bucket))):
+            rs = df[(df["model"]==model) & (df["completion_length_bucket"] == completion_length_bucket)]
+            latency = rs.generation_latency_s.mean()
+            latencies.append(latency)
+            latencies_by_model[model].append(latency)
+
+        plt.plot(completion_lengths_buckets, latencies, '-', label=os.path.dirname(model))
+
+    plt.xlabel("generation length (tokens)")
+    plt.ylabel("total generation latency (s)")
+    plt.legend(loc="upper left")
+    plt.tight_layout()
+    print(f"{args.out_dir=}")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot.svg")

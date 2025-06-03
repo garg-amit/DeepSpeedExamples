@@ -45,7 +45,7 @@ def call_fastgen(
         nonlocal time_last_token
         # print(f"Received: {response[0].generated_text} time_last_token={time_last_token}")
         output_tokens.append(response[0].generated_text)
-        time_now = time.time()
+        time_now = time.time() # this is in seconds
         token_gen_time.append(time_now - time_last_token)
         time_last_token = time_now
 
