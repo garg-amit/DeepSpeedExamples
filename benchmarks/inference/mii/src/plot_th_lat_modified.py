@@ -121,7 +121,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
             fit_kwargs["color"] = color_cycle(id % 10)
             plot_fit_line = True
 
-            polyfit_degree = 3 # increase to increase the order of the polynomial. > 1 tends to overfit this data
+            polyfit_degree = 2 # increase to increase the order of the polynomial. > 1 tends to overfit this data
             plot_fn = ax.scatter
 
             plot_config = glob.glob(f"{data_dir}/plot_config.yaml")
@@ -195,8 +195,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                     denom = 1000
                     step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
                     assert step > 0
-                    # 10 overstep helped! 25 too much
-                    fit_x_list = np.arange(min(throughputs), max(throughputs)+20*step, step)
+                    fit_x_list = np.arange(min(throughputs), max(throughputs)+200*step, step)
                     print(f"!!!!!!!!!!! {model=} {file_pattern=} {denom=} {prompt=} {gen=} {fit_x_list[-10:]=}")
                 else:
 
@@ -204,7 +203,17 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                     step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
                     assert step > 0
                     fit_x_list = np.arange(min(throughputs), max(throughputs), step)
-                    
+                
+                if "phi4mini" in file_pattern.lower():
+                    # helps but not enough
+                    # throughputs = throughputs[:3]*10 + throughputs
+                    # latencies = latencies[:3]*10 + latencies
+
+                    throughputs = [0, 0.001, 0.0015, 0.0019, 0.002, 0.0025, 0.003] + throughputs
+                    latencies = [800, 800, 770, 850, 900, 950, 1000] + latencies
+
+                    # latencies[1]
+
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
                 x = fit_x_list if plot_fit_line else throughputs
