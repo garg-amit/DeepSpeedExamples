@@ -191,9 +191,9 @@ if __name__ == "__main__":
 
         label = os.path.dirname(model)
         if "yocov2" in label.lower():
-            label = "Phi4-mini-Flash"
+            label = "Phi4-mini-flash-reasoning"
         elif "phi4" in label.lower():
-            label = "Phi4-mini"
+            label = "Phi4-mini-reasoning"
         elif "qwen" in label.lower():
             label = "Qwen2.5-7B"
 
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
         # plot line of best fit
         fit_kwargs["color"] = color_cycle(i % 10)
-        polyfit_degree = 2 if "flash" in label.lower() else 3
+        polyfit_degree = 1 if "flash" in label.lower() else 3
         data_model = np.polyfit(completion_lengths_buckets, latencies, polyfit_degree)
         model_fn = np.poly1d(data_model)
 
@@ -231,7 +231,6 @@ if __name__ == "__main__":
         fit_x_list = np.arange(min(completion_lengths_buckets), max(completion_lengths_buckets)+1, step)
         x = fit_x_list
         y = model_fn(fit_x_list)
-        print(f"{fit_x_list=}")
         ax.plot(
             x,
             y,
@@ -245,5 +244,5 @@ if __name__ == "__main__":
     plt.title("Generation Latencies for Prompt: 2000, TP: 1")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_scatterfit.svg")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_scatterfit_increasing_noqwen_reasoning.svg")
     #df.to_json(f"{args.out_dir}/plot_data.json")
