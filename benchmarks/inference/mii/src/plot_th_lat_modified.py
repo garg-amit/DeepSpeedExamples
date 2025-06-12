@@ -191,7 +191,7 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                     fit_kwargs["color"] = plot_color
 
                 print(f"~~~ {model=} {file_pattern=}")
-                if "phi4mini" in file_pattern and str(gen) == "32000":
+                if False: #"phi4mini" in file_pattern and str(gen) == "32000":
                     denom = 1000
                     step = (max(throughputs)-min(throughputs)) /  denom # lots of steps needed to get good resolution. can't be fixed.
                     assert step > 0
@@ -204,15 +204,13 @@ def output_charts(models, tp_size, bs, replicas, prompt, gen, out_dir, ax=None, 
                     assert step > 0
                     fit_x_list = np.arange(min(throughputs), max(throughputs), step)
                 
-                if "phi4mini" in file_pattern.lower():
-                    # helps but not enough
-                    # throughputs = throughputs[:3]*10 + throughputs
-                    # latencies = latencies[:3]*10 + latencies
+                # if "phi4mini" in file_pattern.lower():
+                #     # helps but not enough
+                #     # throughputs = throughputs[:3]*10 + throughputs
+                #     # latencies = latencies[:3]*10 + latencies
 
-                    throughputs = [0, 0.001, 0.0015, 0.0019, 0.002, 0.0025, 0.003] + throughputs
-                    latencies = [800, 800, 770, 850, 900, 950, 1000] + latencies
-
-                    # latencies[1]
+                #     throughputs = [0, 0.001, 0.0015, 0.0019, 0.002, 0.0025, 0.003] + throughputs
+                #     latencies = [800, 800, 770, 850, 900, 950, 1000] + latencies
 
                 data_model = np.polyfit(throughputs, latencies, polyfit_degree)
                 model_fn = np.poly1d(data_model)
