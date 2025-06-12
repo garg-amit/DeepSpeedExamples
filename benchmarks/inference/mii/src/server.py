@@ -78,8 +78,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     # always needed with yocov2 else `"prefix caching not supported"`
     if args.yocov2:
         vllm_cmd += (
-            "--enable-chunked-prefill", # always needed with yocov2 else `"prefix caching not supported"`
-            "false",
+            "--no-enable-chunked-prefill", # always needed with yocov2 else `"prefix caching not supported"`
             "--no-enable-prefix-caching",
         )
 
@@ -91,6 +90,7 @@ def start_vllm_server(args: argparse.Namespace) -> None:
     my_env = os.environ.copy()
     my_env["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "true" # TODO need this?
     my_env["CUDA_VISIBLE_DEVICES"] = str(args.cuda_visible_devices)
+    my_env["VLLM_ATTENTION_BACKEND"] = "DIFFERENTIAL_FLASH_ATTN"
     if args.vllm_profile_dir:
         my_env["VLLM_TORCH_PROFILER_DIR"] = args.vllm_profile_dir
 
