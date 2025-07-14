@@ -181,25 +181,28 @@ if __name__ == "__main__":
     kwargs["marker"] = "o"
     kwargs["linestyle"] = "--"
 
-    for i, model in enumerate(sorted(list(set(df.model)))):
+    mm = {}
+    models = []
+    # order matters! don't set()
+    for m in df.model:
+        mname = os.path.dirname(m)
+        if mname in mm:
+            continue
+        mm[mname] = True
+        models.append(mname)
+    assert len(models) == len(args.model_names), f"{models=} {args.model_names=}"
+
+    for i, (model, model_ez_name) in enumerate(zip(models, args.model_names)):
         latencies = []
         for completion_length_bucket in sorted(list(set(df.completion_length_bucket))):
-            rs = df[(df["model"]==model) & (df["completion_length_bucket"] == completion_length_bucket)]
+            rs = df[(df.model.str.contains(f"{model}/")) & (df["completion_length_bucket"] == completion_length_bucket)]
             latency = rs.generation_latency_s.mean()
             latencies.append(latency)
             latencies_by_model[model].append(latency)
 
-        label = os.path.dirname(model)
-        if "yocov2" in label.lower():
-            label = "Phi4-mini-flash-reasoning"
-        elif "phi4" in label.lower():
-            label = "Phi4-mini-reasoning"
-        elif "qwen" in label.lower():
-            label = "Qwen2.5-7B"
-
         # plot scatter plot
 
-        kwargs["label"] = label
+        kwargs["label"] = model_ez_name
         kwargs["color"] = color_cycle(i % 10)
         plot_fn = ax.scatter
 
@@ -219,7 +222,7 @@ if __name__ == "__main__":
 
         # plot line of best fit
         fit_kwargs["color"] = color_cycle(i % 10)
-        polyfit_degree = 1 if "flash" in label.lower() else 3
+        polyfit_degree = 1 if "flash" in model_ez_name.lower() else 3
         data_model = np.polyfit(completion_lengths_buckets, latencies, polyfit_degree)
         model_fn = np.poly1d(data_model)
 
@@ -244,5 +247,4 @@ if __name__ == "__main__":
     plt.title("Generation Latencies for Prompt: 2000, TP: 1")
     plt.tight_layout()
     print(f"{args.out_dir=}")
-    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_scatterfit_increasing_noqwen_reasoning.svg")
-    #df.to_json(f"{args.out_dir}/plot_data.json")
+    plt.savefig(f"{args.out_dir}/huggingface_hf_release_plot_generation_latencies.svg")
